@@ -715,7 +715,108 @@
             object-fit: contain;
             filter: drop-shadow(0 0 10px rgba(139, 92, 246, 0.3));
         }
+
+        /* Feedback buttons */
+        .feedback-buttons {
+            display: flex;
+            gap: 0.5rem;
+            margin-top: 0.75rem;
+            opacity: 0;
+            animation: fadeInButtons 0.3s ease-out 0.5s forwards;
+        }
+
+        @keyframes fadeInButtons {
+            from {
+                opacity: 0;
+                transform: translateY(-5px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .feedback-btn {
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            padding: 0.5rem 0.75rem;
+            border-radius: 0.5rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-size: 1.2rem;
+            display: flex;
+            align-items: center;
+            gap: 0.25rem;
+        }
+
+        .feedback-btn:hover:not(:disabled) {
+            background: rgba(139, 92, 246, 0.2);
+            border-color: var(--primary);
+            transform: translateY(-2px) scale(1.05);
+        }
+
+        .feedback-btn.selected {
+            background: linear-gradient(135deg, var(--primary), var(--secondary));
+            border-color: transparent;
+            box-shadow: 0 0 15px rgba(139, 92, 246, 0.5);
+            animation: pulse-feedback 0.5s ease-out;
+        }
+
+        .feedback-btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        @keyframes pulse-feedback {
+
+            0%,
+            100% {
+                transform: scale(1);
+            }
+
+            50% {
+                transform: scale(1.1);
+            }
+        }
+
+        .feedback-toast {
+            position: fixed;
+            bottom: 2rem;
+            right: 2rem;
+            background: rgba(30, 27, 75, 0.95);
+            border: 2px solid var(--primary);
+            border-radius: 1rem;
+            padding: 1rem 1.5rem;
+            z-index: 1000;
+            animation: slideInRight 0.3s ease-out;
+            box-shadow: 0 4px 20px rgba(139, 92, 246, 0.4);
+        }
+
+        @keyframes slideInRight {
+            from {
+                transform: translateX(400px);
+                opacity: 0;
+            }
+
+            to {
+                transform: translateX(0);
+                opacity: 1;
+            }
+        }
+
+        .feedback-toast.fade-out {
+            animation: fadeOut 0.3s ease-out forwards;
+        }
+
+        @keyframes fadeOut {
+            to {
+                opacity: 0;
+                transform: translateY(10px);
+            }
+        }
     </style>
+
 </head>
 
 <body>
@@ -1070,7 +1171,26 @@
         function addMessage(role, content, saveToHistory = true) {
             const div = document.createElement('div');
             div.className = `message ${role === 'user' ? 'user-message' : 'ai-message'}`;
-            div.innerHTML = marked.parse(content);
+
+            // Parse markdown content
+            const parsedContent = marked.parse(content);
+            div.innerHTML = parsedContent;
+
+            // Add feedback buttons only for AI messages (not loading messages)
+            if (role === 'assistant' && !content.includes('shimmer')) {
+                const feedbackDiv = document.createElement('div');
+                feedbackDiv.className = 'feedback-buttons';
+                feedbackDiv.innerHTML = `
+                    <button class="feedback-btn" onclick="sendFeedback(this, 'positive', '${escapeHtml(content)}', '${escapeHtml(getLastUserMessage())}')" title="Good response">
+                        👍
+                    </button>
+                    <button class="feedback-btn" onclick="sendFeedback(this, 'negative', '${escapeHtml(content)}', '${escapeHtml(getLastUserMessage())}')" title="Bad response">
+                        👎
+                    </button>
+                `;
+                div.appendChild(feedbackDiv);
+            }
+
             chatContainer.appendChild(div);
             chatContainer.scrollTop = chatContainer.scrollHeight;
 
@@ -1079,6 +1199,89 @@
             }
 
             return div;
+        }
+
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML.replace(/'/g, '&apos;').replace(/"/g, '&quot;');
+        }
+
+        function getLastUserMessage() {
+            const conv = conversationManager.getCurrent();
+            if (conv && conv.messages.length > 0) {
+                // Find the last user message
+                for (let i = conv.messages.length - 1; i >= 0; i--) {
+                    if (conv.messages[i].role === 'user') {
+                        return conv.messages[i].content;
+                    }
+                }
+            }
+            return 'No question found';
+        }
+
+        function sendFeedback(button, feedbackType, aiResponse, userQuestion) {
+            // Disable both buttons in this feedback group
+            const feedbackButtons = button.parentElement;
+            const allButtons = feedbackButtons.querySelectorAll('.feedback-btn');
+            allButtons.forEach(btn => btn.disabled = true);
+
+            // Mark the clicked button as selected
+            button.classList.add('selected');
+
+            // Unescape HTML entities for email
+            const cleanAiResponse = unescapeHtml(aiResponse);
+            const cleanUserQuestion = unescapeHtml(userQuestion);
+
+            // Create email content
+            const emailSubject = `Orin.AI Feedback: ${feedbackType === 'positive' ? '👍 Positive' : '👎 Negative'}`;
+            const emailBody = `
+Feedback Type: ${feedbackType === 'positive' ? '👍 POSITIVE' : '👎 NEGATIVE'}
+Timestamp: ${new Date().toLocaleString()}
+
+USER QUESTION:
+${cleanUserQuestion}
+
+AI RESPONSE:
+${cleanAiResponse}
+
+---
+Sent from Orin.AI Portal
+            `.trim();
+
+            // Send email using mailto (opens user's email client)
+            const mailtoLink = `mailto:ishkasenarath966@gmail.com?subject=${encodeURIComponent(emailSubject)}&body=${encodeURIComponent(emailBody)}`;
+            window.location.href = mailtoLink;
+
+            // Show thank you toast
+            showFeedbackToast(feedbackType);
+        }
+
+        function unescapeHtml(text) {
+            const textarea = document.createElement('textarea');
+            textarea.innerHTML = text;
+            return textarea.value;
+        }
+
+        function showFeedbackToast(feedbackType) {
+            const toast = document.createElement('div');
+            toast.className = 'feedback-toast';
+            toast.innerHTML = `
+                <div style="display: flex; align-items: center; gap: 0.75rem;">
+                    <span style="font-size: 1.5rem;">${feedbackType === 'positive' ? '👍' : '👎'}</span>
+                    <div>
+                        <div style="font-weight: 600; margin-bottom: 0.25rem;">Thank you for your feedback!</div>
+                        <div style="font-size: 0.9rem; color: #94a3b8;">Your email client will open to send the feedback.</div>
+                    </div>
+                </div>
+            `;
+            document.body.appendChild(toast);
+
+            // Auto-remove after 4 seconds
+            setTimeout(() => {
+                toast.classList.add('fade-out');
+                setTimeout(() => toast.remove(), 300);
+            }, 4000);
         }
 
         async function restartModel() {
@@ -1130,6 +1333,28 @@
                 if (currentAbortController) {
                     currentAbortController.abort();
                 }
+
+                // Immediately stop loading state
+                isModelResponding = false;
+                sendBtn.disabled = false;
+                sendBtn.classList.remove('loading');
+                sendBtn.title = 'Send message';
+
+                // Find and fade out the loading message
+                const messages = chatContainer.querySelectorAll('.message.ai-message');
+                const lastMessage = messages[messages.length - 1];
+                if (lastMessage && lastMessage.querySelector('.shimmer')) {
+                    // Fade out animation
+                    lastMessage.style.transition = 'opacity 0.3s ease-out';
+                    lastMessage.style.opacity = '0';
+                    setTimeout(() => {
+                        if (lastMessage.parentNode) {
+                            chatContainer.removeChild(lastMessage);
+                        }
+                    }, 300);
+                }
+
+                // Restart model
                 restartModel();
             } else {
                 // Normal send message
