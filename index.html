@@ -1493,6 +1493,14 @@
 
         function updateDeepSearchUI() {
             deepSearchToggle.classList.toggle('active', isDeepSearchMode);
+
+            // Update mobile button style
+            if (mobileDeepSearch) {
+                mobileDeepSearch.style.opacity = isDeepSearchMode ? '1' : '0.7';
+                mobileDeepSearch.style.color = isDeepSearchMode ? '#8b5cf6' : 'white';
+                mobileDeepSearch.style.background = isDeepSearchMode ? 'rgba(139, 92, 246, 0.1)' : 'none';
+            }
+
             if (isDeepSearchMode) {
                 headerTitle.textContent = 'Orin.AI | Deep Search';
                 userInput.placeholder = 'Enter complex query for deep analysis...';
@@ -1515,9 +1523,9 @@
                 const feedbackDiv = document.createElement('div');
                 feedbackDiv.className = 'feedback-buttons';
                 feedbackDiv.innerHTML = `
-                    < button class="feedback-btn" onclick = "sendFeedback(this, 'positive', '${escapeHtml(content)}', '${escapeHtml(getLastUserMessage())}')" title = "Good response" >
+                    <button class="feedback-btn" onclick="sendFeedback(this, 'positive', '${escapeHtml(content)}', '${escapeHtml(getLastUserMessage())}')" title="Good response">
                         👍
-                    </button >
+                    </button>
                     <button class="feedback-btn" onclick="sendFeedback(this, 'negative', '${escapeHtml(content)}', '${escapeHtml(getLastUserMessage())}')" title="Bad response">
                         👎
                     </button>
