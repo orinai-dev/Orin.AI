@@ -841,6 +841,55 @@
             top: 0;
         }
 
+        /* Mobile Side Panel */
+        #mobile-side-panel {
+            position: fixed;
+            top: 0;
+            left: -280px;
+            width: 280px;
+            height: 100%;
+            background: rgba(15, 23, 42, 0.98);
+            backdrop-filter: blur(20px);
+            border-right: 1px solid var(--glass-border);
+            z-index: 100;
+            transition: left 0.3s ease;
+            display: flex;
+            flex-direction: column;
+        }
+
+        #mobile-side-panel.open {
+            left: 0;
+        }
+
+        #mobile-panel-overlay {
+            position: fixed;
+            inset: 0;
+            background: rgba(0, 0, 0, 0.5);
+            z-index: 90;
+            display: none;
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+
+        #mobile-panel-overlay.open {
+            display: block;
+            opacity: 1;
+        }
+
+        .mobile-panel-header {
+            padding: 1rem;
+            border-bottom: 1px solid var(--glass-border);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .mobile-panel-footer {
+            padding: 1rem;
+            border-top: 1px solid var(--glass-border);
+            margin-top: auto;
+        }
+
         .mobile-chat-container {
             flex: 1;
             overflow-y: auto;
@@ -877,17 +926,17 @@
         #mobile-view .feedback-buttons {
             display: flex;
             gap: 0.5rem;
-            margin-top: 0.75rem;
-            padding-top: 0.75rem;
+            margin-top: 0.5rem;
+            padding-top: 0.5rem;
             border-top: 1px solid rgba(255, 255, 255, 0.1);
         }
 
         #mobile-view .feedback-btn {
-            padding: 0.5rem 0.875rem;
+            padding: 0.25rem 0.5rem;
             background: rgba(255, 255, 255, 0.05);
             border: 1px solid rgba(255, 255, 255, 0.15);
-            border-radius: 0.5rem;
-            font-size: 1.1rem;
+            border-radius: 0.375rem;
+            font-size: 0.9rem;
             cursor: pointer;
             transition: all 0.2s;
         }
@@ -1028,25 +1077,40 @@
     <!-- Mobile View -->
     <div id="mobile-view">
         <div class="mobile-header">
-            <div style="display: flex; align-items: center; gap: 0.75rem; flex: 1;">
-                <img src="logo.png" alt="Logo" style="width: 36px; height: 36px; border-radius: 8px;">
-                <div style="display: flex; flex-direction: column;">
-                    <span style="font-weight: 600; font-size: 1.1rem; line-height: 1.2;">Orin.AI</span>
-                    <span id="mobile-header-subtitle"
-                        style="font-size: 0.75rem; color: var(--text-secondary); opacity: 0.8;">Chat Portal</span>
+            <div style="display: flex; align-items: center; gap: 0.75rem;">
+                <button onclick="toggleMobileSidePanel()"
+                    style="background: none; border: none; font-size: 1.4rem; color: var(--text-primary); padding: 0.25rem;">
+                    ☰
+                </button>
+                <div style="display: flex; align-items: center; gap: 0.5rem;">
+                    <img src="logo.png" alt="Logo" style="width: 32px; height: 32px; border-radius: 8px;">
+                    <span style="font-weight: 600; font-size: 1.1rem;">Orin.AI</span>
                 </div>
             </div>
-            <div style="display: flex; gap: 0.5rem;">
-                <button onclick="createNewConversation()"
-                    style="background: rgba(139, 92, 246, 0.15); border: 1px solid rgba(139, 92, 246, 0.3); padding: 0.5rem 0.75rem; border-radius: 0.5rem; color: #a78bfa; font-size: 0.85rem; font-weight: 500; display: flex; align-items: center; gap: 0.25rem;">
-                    ➕ New
-                </button>
-                <button onclick="openSettings()"
-                    style="background: rgba(255, 255, 255, 0.05); border: 1px solid var(--glass-border); padding: 0.5rem; border-radius: 0.5rem; font-size: 1.1rem; display: flex; align-items: center;">
-                    ⚙️
+            <button onclick="createNewConversation()"
+                style="background: rgba(139, 92, 246, 0.15); border: 1px solid rgba(139, 92, 246, 0.3); width: 36px; height: 36px; border-radius: 50%; color: #a78bfa; font-size: 1rem; display: flex; align-items: center; justify-content: center;">
+                ➕
+            </button>
+        </div>
+
+        <!-- Mobile Side Panel -->
+        <div id="mobile-side-panel">
+            <div class="mobile-panel-header">
+                <h3>Conversations</h3>
+                <button onclick="toggleMobileSidePanel()"
+                    style="background: none; border: none; font-size: 1.2rem; color: var(--text-secondary);">✕</button>
+            </div>
+            <div id="mobile-conversation-list" class="conversation-list">
+                <!-- Populated by JS -->
+            </div>
+            <div class="mobile-panel-footer">
+                <button class="settings-btn" onclick="openSettings()"
+                    style="width: 100%; background: rgba(139, 92, 246, 0.1); border: 1px solid var(--glass-border); padding: 0.75rem; border-radius: 0.5rem; color: #cbd5e1; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 0.5rem;">
+                    <span>⚙️</span> Settings
                 </button>
             </div>
         </div>
+        <div id="mobile-panel-overlay" onclick="toggleMobileSidePanel()"></div>
 
         <div id="mobile-chat-container" class="mobile-chat-container">
             <!-- Mobile messages will be synced here -->
@@ -1457,6 +1521,42 @@
 
         function createNewConversation() {
             conversationManager.createNew();
+            if (isMobile) toggleMobileSidePanel(false); // Close panel if open
+        }
+
+        function toggleMobileSidePanel(forceState) {
+            const panel = document.getElementById('mobile-side-panel');
+            const overlay = document.getElementById('mobile-panel-overlay');
+
+            const isOpen = panel.classList.contains('open');
+            const newState = forceState !== undefined ? forceState : !isOpen;
+
+            if (newState) {
+                panel.classList.add('open');
+                overlay.classList.add('open');
+                // Sync conversation list
+                const list = document.getElementById('mobile-conversation-list');
+                list.innerHTML = document.getElementById('conversation-list').innerHTML;
+                // Re-attach event listeners (simple clone)
+                Array.from(list.children).forEach((child, index) => {
+                    child.onclick = () => {
+                        conversationManager.switchTo(conversationManager.conversations[index].id);
+                        toggleMobileSidePanel(false);
+                    };
+                    // Update delete button
+                    const deleteBtn = child.querySelector('.delete-btn');
+                    if (deleteBtn) {
+                        deleteBtn.onclick = (e) => {
+                            e.stopPropagation();
+                            conversationManager.deleteConversation(conversationManager.conversations[index].id, e);
+                            toggleMobileSidePanel(false);
+                        };
+                    }
+                });
+            } else {
+                panel.classList.remove('open');
+                overlay.classList.remove('open');
+            }
         }
 
         function openSettings() {
