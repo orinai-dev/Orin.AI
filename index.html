@@ -1505,10 +1505,64 @@
                 modal.style.display = 'flex';
             } else {
                 // Verify device if API key exists
-
                 await verifyDevice(apiKey);
             }
         }
+
+        async function checkSystemStatus() {
+            try {
+                const controller = new AbortController();
+                const timeoutId = setTimeout(() => controller.abort(), 5000);
+
+                const res = await fetch(`${BASE_URL}/v1/status`, {
+                    signal: controller.signal
+                });
+                clearTimeout(timeoutId);
+
+                if (res.ok) {
+                    const data = await res.json();
+                    if (data.status === 'maintenance') {
+                        showMaintenanceScreen(data.message);
+                    } else {
+                        hideMaintenanceScreen();
+                    }
+                } else {
+                    showMaintenanceScreen("System is currently unreachable.");
+                }
+            } catch (e) {
+                showMaintenanceScreen("System Offline. Please try again later.");
+            }
+        }
+
+        function showMaintenanceScreen(message) {
+            let screen = document.getElementById('maintenance-screen');
+            if (!screen) {
+                screen = document.createElement('div');
+                screen.id = 'maintenance-screen';
+                screen.style.cssText = `
+                    position: fixed; inset: 0; background: #000; z-index: 9999;
+                    display: flex; flex-direction: column; align-items: center; justify-content: center;
+                    color: white; font-family: 'Inter', sans-serif; text-align: center;
+                `;
+                screen.innerHTML = `
+                    <div style="font-size: 3rem; margin-bottom: 1rem;">🚧</div>
+                    <h1 style="font-size: 2rem; margin-bottom: 0.5rem;">System Offline</h1>
+                    <p id="maintenance-message" style="color: #94a3b8; max-width: 400px; line-height: 1.5;"></p>
+                    <button onclick="location.reload()" style="margin-top: 2rem; padding: 0.75rem 1.5rem; background: var(--primary); border: none; border-radius: 0.5rem; color: white; cursor: pointer;">Retry Connection</button>
+                `;
+                document.body.appendChild(screen);
+            }
+            document.getElementById('maintenance-message').textContent = message;
+        }
+
+        function hideMaintenanceScreen() {
+            const screen = document.getElementById('maintenance-screen');
+            if (screen) screen.remove();
+        }
+
+        // Check status immediately and every 30 seconds
+        checkSystemStatus();
+        setInterval(checkSystemStatus, 30000);
 
         initPublisherNote();
         initDevice(); // Initialize device detection
