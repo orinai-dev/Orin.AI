@@ -948,6 +948,72 @@
         let isModelResponding = false;
         let currentAbortController = null;
 
+        // Device Fingerprinting
+        function generateDeviceFingerprint() {
+            const canvas = document.createElement('canvas');
+            const ctx = canvas.getContext('2d');
+            ctx.textBaseline = 'top';
+            ctx.font = '14px Arial';
+            ctx.fillText('fingerprint', 2, 2);
+            const canvasData = canvas.toDataURL();
+
+            const fingerprint = [
+                navigator.userAgent,
+                navigator.language,
+                screen.width + 'x' + screen.height,
+                screen.colorDepth,
+                new Date().getTimezoneOffset(),
+                navigator.hardwareConcurrency || 'unknown',
+                canvasData.substring(0, 100) // First 100 chars of canvas fingerprint
+            ].join('|');
+
+            // Simple hash function
+            let hash = 0;
+            for (let i = 0; i < fingerprint.length; i++) {
+                const char = fingerprint.charCodeAt(i);
+                hash = ((hash << 5) - hash) + char;
+                hash = hash & hash; // Convert to 32bit integer
+            }
+            return 'fp_' + Math.abs(hash).toString(36);
+        }
+
+        const deviceFingerprint = generateDeviceFingerprint();
+        console.log('Device fingerprint generated:', deviceFingerprint);
+
+        // Verify device on load
+        async function verifyDevice(apiKey) {
+            try {
+                const response = await fetch(`${BASE_URL}/v1/device/verify`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        api_key: apiKey,
+                        device_fingerprint: deviceFingerprint
+                    })
+                });
+
+                const data = await response.json();
+
+                if (!data.can_proceed) {
+                    // Device conflict - show error and clear key
+                    alert('⚠️ Device Conflict\n\n' + data.message + '\n\nYour API key is bound to another device. Please contact the administrator to reset your device binding.');
+                    localStorage.removeItem('ai_key');
+                    apiKey = null;
+                    modal.style.display = 'flex';
+                    return false;
+                }
+
+                console.log('Device verification:', data.status, '-', data.message);
+                return true;
+            } catch (error) {
+                console.error('Device verification failed:', error);
+                // On error, allow access (fail open)
+                return true;
+            }
+        }
+
         // Conversation Manager
         const conversationManager = {
             conversations: [],
@@ -1119,9 +1185,12 @@
             }, 300);
         }
 
-        function checkApiKey() {
+        async function checkApiKey() {
             if (!apiKey) {
                 modal.style.display = 'flex';
+            } else {
+                // Verify device if API key exists
+                await verifyDevice(apiKey);
             }
         }
 
@@ -1147,12 +1216,21 @@
             }
         }
 
-        function saveKey() {
+        async function saveKey() {
             const input = document.getElementById('api-key-input');
             if (input.value.trim()) {
-                apiKey = input.value.trim();
-                localStorage.setItem('ai_key', apiKey);
-                modal.style.display = 'none';
+                const newKey = input.value.trim();
+
+                // Verify device before accepting the key
+                const canProceed = await verifyDevice(newKey);
+
+                if (canProceed) {
+                    apiKey = newKey;
+                    localStorage.setItem('ai_key', apiKey);
+                    modal.style.display = 'none';
+                } else {
+                    input.value = '';
+                }
             }
         }
 
