@@ -830,13 +830,15 @@
 
         .mobile-header {
             padding: 1rem;
-            background: rgba(15, 23, 42, 0.9);
+            background: rgba(15, 23, 42, 0.95);
             backdrop-filter: blur(10px);
             border-bottom: 1px solid var(--glass-border);
             display: flex;
             align-items: center;
             justify-content: space-between;
             z-index: 10;
+            position: sticky;
+            top: 0;
         }
 
         .mobile-chat-container {
@@ -846,8 +848,63 @@
             display: flex;
             flex-direction: column;
             gap: 1rem;
-            padding-bottom: 80px;
+            padding-bottom: 90px;
             /* Space for input */
+        }
+
+        /* Mobile message styling */
+        #mobile-view .message {
+            padding: 0.875rem 1rem;
+            border-radius: 1rem;
+            max-width: 85%;
+            word-wrap: break-word;
+        }
+
+        #mobile-view .user-message {
+            align-self: flex-end;
+            background: linear-gradient(135deg, var(--primary), #8b5cf6);
+            margin-left: auto;
+        }
+
+        #mobile-view .ai-message {
+            align-self: flex-start;
+            background: rgba(255, 255, 255, 0.05);
+            backdrop-filter: blur(10px);
+            border: 1px solid var(--glass-border);
+        }
+
+        /* Mobile feedback buttons */
+        #mobile-view .feedback-buttons {
+            display: flex;
+            gap: 0.5rem;
+            margin-top: 0.75rem;
+            padding-top: 0.75rem;
+            border-top: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        #mobile-view .feedback-btn {
+            padding: 0.5rem 0.875rem;
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            border-radius: 0.5rem;
+            font-size: 1.1rem;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        #mobile-view .feedback-btn:hover {
+            background: rgba(255, 255, 255, 0.1);
+            transform: scale(1.05);
+        }
+
+        #mobile-view .feedback-btn.selected {
+            background: rgba(139, 92, 246, 0.2);
+            border-color: var(--primary);
+        }
+
+        #mobile-view .feedback-btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
         }
 
         .mobile-input-area {
@@ -855,37 +912,51 @@
             bottom: 0;
             left: 0;
             width: 100%;
-            background: rgba(15, 23, 42, 0.95);
-            backdrop-filter: blur(10px);
-            padding: 0.75rem;
+            background: rgba(15, 23, 42, 0.98);
+            backdrop-filter: blur(15px);
+            padding: 0.875rem;
             border-top: 1px solid var(--glass-border);
             display: flex;
             gap: 0.5rem;
             align-items: center;
+            box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.3);
         }
 
         .mobile-input {
             flex: 1;
-            background: rgba(255, 255, 255, 0.1);
+            background: rgba(255, 255, 255, 0.08);
             border: 1px solid rgba(255, 255, 255, 0.2);
             border-radius: 1.5rem;
-            padding: 0.75rem 1rem;
+            padding: 0.875rem 1.125rem;
             color: white;
             font-size: 16px;
             /* Prevent zoom on iOS */
             outline: none;
+            transition: all 0.2s;
+        }
+
+        .mobile-input:focus {
+            background: rgba(255, 255, 255, 0.12);
+            border-color: var(--primary);
         }
 
         .mobile-send-btn {
             background: var(--primary);
             color: white;
             border: none;
-            width: 40px;
-            height: 40px;
+            width: 44px;
+            height: 44px;
             border-radius: 50%;
             display: flex;
             align-items: center;
             justify-content: center;
+            cursor: pointer;
+            transition: all 0.2s;
+            box-shadow: 0 2px 8px rgba(59, 130, 246, 0.3);
+        }
+
+        .mobile-send-btn:active {
+            transform: scale(0.95);
         }
     </style>
 
@@ -957,11 +1028,24 @@
     <!-- Mobile View -->
     <div id="mobile-view">
         <div class="mobile-header">
-            <div style="display: flex; align-items: center; gap: 0.5rem;">
-                <img src="logo.png" alt="Logo" style="width: 32px; height: 32px;">
-                <span style="font-weight: 600; font-size: 1.1rem;">Orin.AI</span>
+            <div style="display: flex; align-items: center; gap: 0.75rem; flex: 1;">
+                <img src="logo.png" alt="Logo" style="width: 36px; height: 36px; border-radius: 8px;">
+                <div style="display: flex; flex-direction: column;">
+                    <span style="font-weight: 600; font-size: 1.1rem; line-height: 1.2;">Orin.AI</span>
+                    <span id="mobile-header-subtitle"
+                        style="font-size: 0.75rem; color: var(--text-secondary); opacity: 0.8;">Chat Portal</span>
+                </div>
             </div>
-            <button onclick="openSettings()" style="background: none; border: none; font-size: 1.2rem;">⚙️</button>
+            <div style="display: flex; gap: 0.5rem;">
+                <button onclick="createNewConversation()"
+                    style="background: rgba(139, 92, 246, 0.15); border: 1px solid rgba(139, 92, 246, 0.3); padding: 0.5rem 0.75rem; border-radius: 0.5rem; color: #a78bfa; font-size: 0.85rem; font-weight: 500; display: flex; align-items: center; gap: 0.25rem;">
+                    ➕ New
+                </button>
+                <button onclick="openSettings()"
+                    style="background: rgba(255, 255, 255, 0.05); border: 1px solid var(--glass-border); padding: 0.5rem; border-radius: 0.5rem; font-size: 1.1rem; display: flex; align-items: center;">
+                    ⚙️
+                </button>
+            </div>
         </div>
 
         <div id="mobile-chat-container" class="mobile-chat-container">
@@ -970,9 +1054,13 @@
 
         <div class="mobile-input-area">
             <button id="mobile-deep-search" onclick="toggleDeepSearch()"
-                style="background: none; border: none; font-size: 1.2rem; opacity: 0.7;">🔍</button>
+                style="background: none; border: none; font-size: 1.3rem; padding: 0.5rem; opacity: 0.7; transition: all 0.2s;">
+                🔍
+            </button>
             <input type="text" id="mobile-input" class="mobile-input" placeholder="Message...">
-            <button class="mobile-send-btn" onclick="handleSendButtonClick()">➤</button>
+            <button class="mobile-send-btn" onclick="handleSendButtonClick()" style="font-size: 1.2rem;">
+                ➤
+            </button>
         </div>
     </div>
 
