@@ -1527,10 +1527,15 @@
                         hideMaintenanceScreen();
                     }
                 } else {
-                    showMaintenanceScreen("System is currently unreachable.");
+                    // Server unreachable but not explicitly in maintenance
+                    // We do NOT show the full screen blocker, allowing the user to try again
+                    console.warn("System unreachable, but not in maintenance mode.");
+                    hideMaintenanceScreen();
                 }
             } catch (e) {
-                showMaintenanceScreen("System Offline. Please try again later.");
+                // Network error
+                console.warn("Network error checking status:", e);
+                hideMaintenanceScreen();
             }
         }
 
