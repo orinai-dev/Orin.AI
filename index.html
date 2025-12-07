@@ -825,7 +825,7 @@
             display: none;
             flex-direction: column;
             height: 100vh;
-            background: #000;
+            background: transparent;
         }
 
         .mobile-header {
@@ -897,7 +897,7 @@
             display: flex;
             flex-direction: column;
             gap: 1rem;
-            padding-bottom: 90px;
+            padding-bottom: 140px;
             /* Space for input */
         }
 
@@ -1006,6 +1006,29 @@
 
         .mobile-send-btn:active {
             transform: scale(0.95);
+        }
+
+        #mobile-deep-search {
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            font-size: 1.3rem;
+            padding: 0.5rem;
+            opacity: 0.7;
+            transition: all 0.3s ease;
+            border-radius: 50%;
+            width: 44px;
+            height: 44px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        #mobile-deep-search.active {
+            background: linear-gradient(135deg, var(--primary), var(--secondary));
+            color: white;
+            border-color: transparent;
+            box-shadow: 0 0 15px rgba(139, 92, 246, 0.5);
+            opacity: 1;
         }
     </style>
 
@@ -1117,8 +1140,7 @@
         </div>
 
         <div class="mobile-input-area">
-            <button id="mobile-deep-search" onclick="toggleDeepSearch()"
-                style="background: none; border: none; font-size: 1.3rem; padding: 0.5rem; opacity: 0.7; transition: all 0.2s;">
+            <button id="mobile-deep-search" onclick="toggleDeepSearch()">
                 🔍
             </button>
             <input type="text" id="mobile-input" class="mobile-input" placeholder="Message...">
@@ -1292,8 +1314,13 @@
             return 'fp_' + Math.abs(hash).toString(36);
         }
 
-        const deviceFingerprint = generateDeviceFingerprint();
-        console.log('Device fingerprint generated:', deviceFingerprint);
+        // Get or create persistent device fingerprint
+        let deviceFingerprint = localStorage.getItem('orin_device_fingerprint');
+        if (!deviceFingerprint) {
+            deviceFingerprint = generateDeviceFingerprint();
+            localStorage.setItem('orin_device_fingerprint', deviceFingerprint);
+        }
+        console.log('Device fingerprint:', deviceFingerprint);
 
         // Verify device on load
         async function verifyDevice(apiKey) {
@@ -1654,10 +1681,9 @@
             deepSearchToggle.classList.toggle('active', isDeepSearchMode);
 
             // Update mobile button style
+            // Update mobile button style
             if (mobileDeepSearch) {
-                mobileDeepSearch.style.opacity = isDeepSearchMode ? '1' : '0.7';
-                mobileDeepSearch.style.color = isDeepSearchMode ? '#8b5cf6' : 'white';
-                mobileDeepSearch.style.background = isDeepSearchMode ? 'rgba(139, 92, 246, 0.1)' : 'none';
+                mobileDeepSearch.classList.toggle('active', isDeepSearchMode);
             }
 
             if (isDeepSearchMode) {
@@ -1918,6 +1944,10 @@ ${cleanAiResponse}
                         location.reload();
                         throw new Error('Authentication failed');
                     }
+                    if (response.status === 503) {
+                        showMaintenanceScreen("System is under maintenance.");
+                        throw new Error('MAINTENANCE_MODE'); // Special error to catch below
+                    }
                     throw new Error(`Uplink Error: ${response.status} `);
                 }
 
@@ -1931,6 +1961,9 @@ ${cleanAiResponse}
                 if (error.name === 'AbortError') {
                     chatContainer.removeChild(loadingDiv);
                     addMessage('assistant', '🔄 **Response stopped** - Model is restarting...');
+                } else if (error.message === 'MAINTENANCE_MODE') {
+                    chatContainer.removeChild(loadingDiv);
+                    // Do nothing, maintenance screen is already shown
                 } else {
                     chatContainer.removeChild(loadingDiv);
                     addMessage('assistant', `⚠️ ** System Alert **: ${error.message}`);
