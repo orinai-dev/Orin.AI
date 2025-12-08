@@ -921,7 +921,7 @@
             background: rgba(15, 23, 42, 0.98);
             backdrop-filter: blur(20px);
             border-right: 1px solid var(--glass-border);
-            z-index: 200;
+            z-index: 1000;
             transition: left 0.3s ease;
             display: flex;
             flex-direction: column;
@@ -935,7 +935,7 @@
             position: fixed;
             inset: 0;
             background: rgba(0, 0, 0, 0.5);
-            z-index: 90;
+            z-index: 999;
             display: none;
             opacity: 0;
             transition: opacity 0.3s ease;
@@ -1024,6 +1024,11 @@
         #mobile-view .feedback-btn:disabled {
             opacity: 0.5;
             cursor: not-allowed;
+        }
+
+        /* Force actions visible on mobile view wrapper */
+        #mobile-view .message-actions {
+            opacity: 1 !important;
         }
 
         .mobile-input-area {
@@ -1895,7 +1900,7 @@ ${cleanAiResponse}
             `.trim();
 
             // Send email using mailto (opens user's email client)
-            const mailtoLink = `mailto:ishkasenarath966 @gmail.com?subject = ${encodeURIComponent(emailSubject)}& body=${encodeURIComponent(emailBody)} `;
+            const mailtoLink = `mailto:ishkasenarath966@gmail.com?subject=${encodeURIComponent(emailSubject)}&body=${encodeURIComponent(emailBody)}`;
             window.location.href = mailtoLink;
 
             // Show thank you toast
@@ -1912,14 +1917,14 @@ ${cleanAiResponse}
             const toast = document.createElement('div');
             toast.className = 'feedback-toast';
             toast.innerHTML = `
-                    < div style = "display: flex; align-items: center; gap: 0.75rem;" >
+                <div style="display: flex; align-items: center; gap: 0.75rem;">
                     <span style="font-size: 1.5rem;">${feedbackType === 'positive' ? '👍' : '👎'}</span>
                     <div>
                         <div style="font-weight: 600; margin-bottom: 0.25rem;">Thank you for your feedback!</div>
                         <div style="font-size: 0.9rem; color: #94a3b8;">Your email client will open to send the feedback.</div>
                     </div>
-                </div >
-                    `;
+                </div>
+            `;
             document.body.appendChild(toast);
 
             // Auto-remove after 4 seconds
@@ -1933,10 +1938,10 @@ ${cleanAiResponse}
             const notification = document.createElement('div');
             notification.className = 'restart-notification';
             notification.innerHTML = `
-                    < h3 >🔄 Restarting Model</h3 >
+                <h3>🔄 Restarting Model</h3>
                 <p>Stopping current response and restarting AI engine...</p>
                 <span class="shimmer">Please wait...</span>
-                `;
+            `;
             document.body.appendChild(notification);
 
             try {
@@ -1986,19 +1991,10 @@ ${cleanAiResponse}
                 sendBtn.classList.remove('loading');
                 sendBtn.title = 'Send message';
 
-                // Find and fade out the loading message
-                const messages = chatContainer.querySelectorAll('.message.ai-message');
-                const lastMessage = messages[messages.length - 1];
-                if (lastMessage && lastMessage.querySelector('.shimmer')) {
-                    // Fade out animation
-                    lastMessage.style.transition = 'opacity 0.3s ease-out';
-                    lastMessage.style.opacity = '0';
-                    setTimeout(() => {
-                        if (lastMessage.parentNode) {
-                            chatContainer.removeChild(lastMessage);
-                        }
-                    }, 300);
-                }
+                // NOTE: We do NOT remove the loading message here.
+                // The abort() call above will trigger the 'AbortError' in sendMessage(),
+                // which will handle the UI update (removing loading div and showing "Response stopped").
+                // Removing it here would cause sendMessage to crash when it tries to remove it again.
 
                 // Restart model
                 restartModel();
@@ -2024,7 +2020,7 @@ ${cleanAiResponse}
             const loadingDiv = document.createElement('div');
             loadingDiv.className = 'message ai-message';
             const loadingText = isDeepSearchMode ? 'Conducting deep analysis...' : 'Processing neural pathways...';
-            loadingDiv.innerHTML = `<span class="shimmer">${loadingText}</span>`;
+            loadingDiv.innerHTML = `< span class="shimmer" > ${loadingText}</span > `;
             chatContainer.appendChild(loadingDiv);
             chatContainer.scrollTop = chatContainer.scrollHeight;
 
@@ -2047,7 +2043,7 @@ ${cleanAiResponse}
                         temperature: 0.7
                     };
 
-                const response = await fetch(`${BASE_URL}${endpoint}`, {
+                const response = await fetch(`${BASE_URL}${endpoint} `, {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
@@ -2078,13 +2074,13 @@ ${cleanAiResponse}
 
             } catch (error) {
                 if (error.name === 'AbortError') {
-                    chatContainer.removeChild(loadingDiv);
+                    if (loadingDiv.parentNode) chatContainer.removeChild(loadingDiv);
                     addMessage('assistant', '🔄 **Response stopped** - Model is restarting...');
                 } else if (error.message === 'MAINTENANCE_MODE') {
-                    chatContainer.removeChild(loadingDiv);
+                    if (loadingDiv.parentNode) chatContainer.removeChild(loadingDiv);
                     // Do nothing, maintenance screen is already shown
                 } else {
-                    chatContainer.removeChild(loadingDiv);
+                    if (loadingDiv.parentNode) chatContainer.removeChild(loadingDiv);
                     addMessage('assistant', `⚠️ ** System Alert **: ${error.message}`);
                 }
             } finally {
