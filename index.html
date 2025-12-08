@@ -486,18 +486,30 @@
             display: block;
         }
 
-        /* Message Actions (Copy/Delete) */
+        /* Message Actions (Copy/Delete) - OUTSIDE the bubble */
+        .message-wrapper {
+            display: flex;
+            flex-direction: column;
+            margin-top: 1.5rem;
+        }
+
+        .message-wrapper.user-wrapper {
+            align-items: flex-end;
+        }
+
+        .message-wrapper.ai-wrapper {
+            align-items: flex-start;
+        }
+
         .message-actions {
             display: flex;
             gap: 0.5rem;
-            margin-top: 0.25rem;
-            opacity: 0;
+            margin-top: 0.4rem;
+            opacity: 0.6;
             transition: opacity 0.2s;
-            justify-content: flex-end;
-            /* Align to right for user, left for AI? or just end */
         }
 
-        .message:hover .message-actions {
+        .message-wrapper:hover .message-actions {
             opacity: 1;
         }
 
@@ -509,23 +521,23 @@
         }
 
         .action-btn {
-            background: transparent;
-            border: none;
-            color: rgba(255, 255, 255, 0.4);
+            background: rgba(255, 255, 255, 0.08);
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            color: rgba(255, 255, 255, 0.7);
             cursor: pointer;
-            padding: 0.2rem;
-            font-size: 0.8rem;
-            /* Very small */
+            padding: 0.25rem 0.5rem;
+            font-size: 0.7rem;
             display: flex;
             align-items: center;
-            gap: 0.2rem;
+            gap: 0.25rem;
             transition: all 0.2s;
             border-radius: 4px;
         }
 
         .action-btn:hover {
             color: white;
-            background: rgba(255, 255, 255, 0.1);
+            background: rgba(255, 255, 255, 0.15);
+            border-color: rgba(255, 255, 255, 0.3);
         }
 
         .action-btn svg {
@@ -1811,42 +1823,55 @@
         }
 
         function addMessage(role, content, saveToHistory = true) {
+            // Create wrapper for message + actions
+            const wrapper = document.createElement('div');
+            wrapper.className = `message-wrapper ${role === 'user' ? 'user-wrapper' : 'ai-wrapper'}`;
+
+            // Create the message div
             const div = document.createElement('div');
-            div.className = `message ${role === 'user' ? 'user-message' : 'ai-message'} `;
+            div.className = `message ${role === 'user' ? 'user-message' : 'ai-message'}`;
 
             // Parse markdown content
             const parsedContent = marked.parse(content);
             div.innerHTML = parsedContent;
 
-            // Add feedback buttons only for AI messages (not loading messages)
-            if (role === 'assistant' && !content.includes('shimmer')) {
-                const feedbackDiv = document.createElement('div');
-                feedbackDiv.className = 'feedback-buttons';
-                feedbackDiv.innerHTML = `
-                    <button class="feedback-btn" onclick="sendFeedback(this, 'positive', '${escapeHtml(content)}', '${escapeHtml(getLastUserMessage())}')" title="Good response">
-                        👍
-                    </button>
-                    <button class="feedback-btn" onclick="sendFeedback(this, 'negative', '${escapeHtml(content)}', '${escapeHtml(getLastUserMessage())}')" title="Bad response">
-                        👎
-                    </button>
-                `;
-                div.appendChild(feedbackDiv);
-            }
+            // Add message to wrapper
+            wrapper.appendChild(div);
 
-            // Add Message Actions (Copy/Delete) for ALL messages (except loading)
+            // Create actions div (outside the bubble)
             if (!content.includes('shimmer')) {
                 const actionsDiv = document.createElement('div');
                 actionsDiv.className = 'message-actions';
+
+                // Feedback buttons only for AI messages
+                if (role === 'assistant') {
+                    const thumbsUpBtn = document.createElement('button');
+                    thumbsUpBtn.className = 'action-btn';
+                    thumbsUpBtn.title = 'Good response';
+                    thumbsUpBtn.innerHTML = '🖒';
+                    thumbsUpBtn.onclick = (e) => {
+                        e.stopPropagation();
+                        sendFeedback(thumbsUpBtn, 'positive', content, getLastUserMessage());
+                    };
+
+                    const thumbsDownBtn = document.createElement('button');
+                    thumbsDownBtn.className = 'action-btn';
+                    thumbsDownBtn.title = 'Bad response';
+                    thumbsDownBtn.innerHTML = '🖓';
+                    thumbsDownBtn.onclick = (e) => {
+                        e.stopPropagation();
+                        sendFeedback(thumbsDownBtn, 'negative', content, getLastUserMessage());
+                    };
+
+                    actionsDiv.appendChild(thumbsUpBtn);
+                    actionsDiv.appendChild(thumbsDownBtn);
+                }
 
                 // Copy Button
                 const copyBtn = document.createElement('button');
                 copyBtn.className = 'action-btn';
                 copyBtn.title = 'Copy text';
-                copyBtn.innerHTML = `
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>
-                    Copy
-                `;
-                // Use a closure to capture the correct content
+                copyBtn.innerHTML = `<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg> Copy`;
                 copyBtn.onclick = (e) => {
                     e.stopPropagation();
                     copyToClipboard(content, copyBtn);
@@ -1856,21 +1881,18 @@
                 const deleteBtn = document.createElement('button');
                 deleteBtn.className = 'action-btn';
                 deleteBtn.title = 'Delete message';
-                deleteBtn.innerHTML = `
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
-                    Delete
-                `;
+                deleteBtn.innerHTML = `<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg> Delete`;
                 deleteBtn.onclick = (e) => {
                     e.stopPropagation();
-                    deleteMessage(div);
+                    deleteMessage(wrapper);
                 };
 
                 actionsDiv.appendChild(copyBtn);
                 actionsDiv.appendChild(deleteBtn);
-                div.appendChild(actionsDiv);
+                wrapper.appendChild(actionsDiv);
             }
 
-            chatContainer.appendChild(div);
+            chatContainer.appendChild(wrapper);
             chatContainer.scrollTop = chatContainer.scrollHeight;
 
             if (saveToHistory) {
