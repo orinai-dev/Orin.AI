@@ -1009,6 +1009,12 @@
             font-size: 0.9rem;
             cursor: pointer;
             transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            min-width: 36px; /* Slightly larger */
+            min-height: 36px;
+            font-size: 1.1rem; /* Larger icon */
         }
 
         #mobile-view .feedback-btn:hover {
@@ -1475,7 +1481,12 @@
                 this.save();
                 this.render();
 
-                chatContainer.innerHTML = '<div class="message ai-message"><p>Greetings. I am Orin.AI. Systems online and ready for your input.</p></div>';
+                // chatContainer.innerHTML = '<div class="message ai-message"><p>Greetings. I am Orin.AI. Systems online and ready for your input.</p></div>';
+                // Instead of hardcoding HTML, use addMessage to ensure consistent styling and buttons
+                chatContainer.innerHTML = '';
+                // Use global addMessage to render AND save
+                addMessage('assistant', 'Greetings. I am Orin.AI. Systems online and ready for your input.', true);
+
                 isDeepSearchMode = false;
                 updateDeepSearchUI();
 
@@ -1524,7 +1535,16 @@
                 const conv = this.getCurrent();
                 if (!conv) return;
 
-                chatContainer.innerHTML = '<div class="message ai-message"><p>Greetings. I am Orin.AI. Systems online and ready for your input.</p></div>';
+                // chatContainer.innerHTML = '<div class="message ai-message"><p>Greetings. I am Orin.AI. Systems online and ready for your input.</p></div>';
+                chatContainer.innerHTML = '';
+                // We don't save this initial message to history again as it's just a visual greeting for the session
+                // OR if it's already in history, we shouldn't add it.
+                // Actually, loadCurrentConversation loads FROM history. 
+                // If the greeting is in history, it will be loaded by the loop below.
+                // If we want a greeting even if empty, we check:
+                if (conv.messages.length === 0) {
+                     addMessage('assistant', 'Greetings. I am Orin.AI. Systems online and ready for your input.', true);
+                }
 
                 conv.messages.forEach(msg => {
                     addMessage(msg.role, msg.content, false);
@@ -1809,6 +1829,43 @@
                     </button>
                 `;
                 div.appendChild(feedbackDiv);
+            }
+
+            // Add Message Actions (Copy/Delete) for ALL messages (except loading)
+            if (!content.includes('shimmer')) {
+                const actionsDiv = document.createElement('div');
+                actionsDiv.className = 'message-actions';
+
+                // Copy Button
+                const copyBtn = document.createElement('button');
+                copyBtn.className = 'action-btn';
+                copyBtn.title = 'Copy text';
+                copyBtn.innerHTML = `
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>
+                    Copy
+                `;
+                // Use a closure to capture the correct content
+                copyBtn.onclick = (e) => {
+                    e.stopPropagation();
+                    copyToClipboard(content, copyBtn);
+                };
+
+                // Delete Button
+                const deleteBtn = document.createElement('button');
+                deleteBtn.className = 'action-btn';
+                deleteBtn.title = 'Delete message';
+                deleteBtn.innerHTML = `
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
+                    Delete
+                `;
+                deleteBtn.onclick = (e) => {
+                    e.stopPropagation();
+                    deleteMessage(div);
+                };
+
+                actionsDiv.appendChild(copyBtn);
+                actionsDiv.appendChild(deleteBtn);
+                div.appendChild(actionsDiv);
             }
 
             // Add Message Actions (Copy/Delete) for ALL messages (except loading)
