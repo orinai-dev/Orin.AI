@@ -486,10 +486,80 @@
             display: block;
         }
 
-        @keyframes spin {
-            to {
-                transform: rotate(360deg);
+        /* Message Actions (Copy/Delete) */
+        .message-actions {
+            display: flex;
+            gap: 0.5rem;
+            margin-top: 0.25rem;
+            opacity: 0;
+            transition: opacity 0.2s;
+            justify-content: flex-end;
+            /* Align to right for user, left for AI? or just end */
+        }
+
+        .message:hover .message-actions {
+            opacity: 1;
+        }
+
+        /* Always show on mobile since no hover */
+        @media (max-width: 768px) {
+            .message-actions {
+                opacity: 1;
             }
+        }
+
+        .action-btn {
+            background: transparent;
+            border: none;
+            color: rgba(255, 255, 255, 0.4);
+            cursor: pointer;
+            padding: 0.2rem;
+            font-size: 0.8rem;
+            /* Very small */
+            display: flex;
+            align-items: center;
+            gap: 0.2rem;
+            transition: all 0.2s;
+            border-radius: 4px;
+        }
+
+        .action-btn:hover {
+            color: white;
+            background: rgba(255, 255, 255, 0.1);
+        }
+
+        .action-btn svg {
+            width: 12px;
+            height: 12px;
+        }
+
+        /* Resized Feedback Buttons */
+        .feedback-buttons {
+            display: flex;
+            gap: 0.3rem;
+            /* Smaller gap */
+            margin-top: 0.5rem;
+            opacity: 0;
+            animation: fadeInButtons 0.3s ease-out 0.5s forwards;
+        }
+
+        .feedback-btn {
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            padding: 0.25rem 0.5rem;
+            /* Smaller padding */
+            border-radius: 0.4rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-size: 0.9rem;
+            /* Smaller font */
+            display: flex;
+            align-items: center;
+            gap: 0.2rem;
+        }
+
+        to {
+            transform: rotate(360deg);
         }
 
         @keyframes pulse {
@@ -851,7 +921,7 @@
             background: rgba(15, 23, 42, 0.98);
             backdrop-filter: blur(20px);
             border-right: 1px solid var(--glass-border);
-            z-index: 100;
+            z-index: 200;
             transition: left 0.3s ease;
             display: flex;
             flex-direction: column;
@@ -962,6 +1032,8 @@
             left: 1rem;
             right: 1rem;
             width: auto;
+            max-width: 100%;
+            box-sizing: border-box;
             background: rgba(15, 23, 42, 0.90);
             backdrop-filter: blur(20px);
             padding: 0.5rem 0.75rem;
@@ -971,7 +1043,7 @@
             gap: 0.5rem;
             align-items: center;
             box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
-            z-index: 100;
+            z-index: 50;
         }
 
         .mobile-input {
@@ -1323,10 +1395,16 @@
         }
 
         // Get or create persistent device fingerprint
-        let deviceFingerprint = localStorage.getItem('orin_device_fingerprint');
-        if (!deviceFingerprint) {
+        let deviceFingerprint;
+        try {
+            deviceFingerprint = localStorage.getItem('orin_device_fingerprint');
+            if (!deviceFingerprint) {
+                deviceFingerprint = generateDeviceFingerprint();
+                localStorage.setItem('orin_device_fingerprint', deviceFingerprint);
+            }
+        } catch (e) {
+            console.warn('LocalStorage access failed, using temporary fingerprint');
             deviceFingerprint = generateDeviceFingerprint();
-            localStorage.setItem('orin_device_fingerprint', deviceFingerprint);
         }
         console.log('Device fingerprint:', deviceFingerprint);
 
@@ -1690,8 +1768,10 @@
 
             // Update mobile button style
             // Update mobile button style
-            if (mobileDeepSearch) {
-                mobileDeepSearch.classList.toggle('active', isDeepSearchMode);
+            // Update mobile button style
+            const mobileDeepSearchBtn = document.getElementById('mobile-deep-search');
+            if (mobileDeepSearchBtn) {
+                mobileDeepSearchBtn.classList.toggle('active', isDeepSearchMode);
             }
 
             if (isDeepSearchMode) {
@@ -1724,6 +1804,36 @@
                     </button>
                 `;
                 div.appendChild(feedbackDiv);
+            }
+
+            // Add Message Actions (Copy/Delete) for ALL messages (except loading)
+            if (!content.includes('shimmer')) {
+                const actionsDiv = document.createElement('div');
+                actionsDiv.className = 'message-actions';
+
+                // Copy Button
+                const copyBtn = document.createElement('button');
+                copyBtn.className = 'action-btn';
+                copyBtn.title = 'Copy text';
+                copyBtn.innerHTML = `
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>
+                    Copy
+                `;
+                copyBtn.onclick = () => copyToClipboard(content, copyBtn);
+
+                // Delete Button
+                const deleteBtn = document.createElement('button');
+                deleteBtn.className = 'action-btn';
+                deleteBtn.title = 'Delete message';
+                deleteBtn.innerHTML = `
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
+                    Delete
+                `;
+                deleteBtn.onclick = () => deleteMessage(div);
+
+                actionsDiv.appendChild(copyBtn);
+                actionsDiv.appendChild(deleteBtn);
+                div.appendChild(actionsDiv);
             }
 
             chatContainer.appendChild(div);
@@ -1830,7 +1940,8 @@ ${cleanAiResponse}
             document.body.appendChild(notification);
 
             try {
-                const response = await fetch(`${BASE_URL} /v1/model / restart`, {
+                // Use the new cancel endpoint
+                const response = await fetch(`${BASE_URL}/v1/model/cancel`, {
                     method: 'POST',
                     headers: {
                         'X-Admin-Lock': ADMIN_LOCK
@@ -1993,11 +2104,34 @@ ${cleanAiResponse}
             }
         });
 
-        userInput.addEventListener('input', function () {
-            this.style.height = 'auto';
-            this.style.height = (this.scrollHeight) + 'px';
-            if (this.value === '') this.style.height = '60px';
-        });
+
+
+        // --- Helper Functions for Actions ---
+        function copyToClipboard(text, btn) {
+            navigator.clipboard.writeText(text).then(() => {
+                const originalHtml = btn.innerHTML;
+                btn.innerHTML = '<span>✓ Copied</span>';
+                setTimeout(() => {
+                    btn.innerHTML = originalHtml;
+                }, 2000);
+            }).catch(err => {
+                console.error('Failed to copy:', err);
+            });
+        }
+
+        function deleteMessage(messageDiv) {
+            if (confirm('Delete this message?')) {
+                messageDiv.style.transition = 'opacity 0.3s, transform 0.3s';
+                messageDiv.style.opacity = '0';
+                messageDiv.style.transform = 'scale(0.9)';
+                setTimeout(() => {
+                    messageDiv.remove();
+                    // Note: This only removes from DOM. 
+                    // To remove from history, we'd need to update conversationManager.
+                    // For now, this is a visual delete as requested.
+                }, 300);
+            }
+        }
 
     </script>
 </body>
