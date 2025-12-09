@@ -1405,7 +1405,6 @@
 
             <div class="auth-tabs">
                 <button class="auth-tab active" onclick="switchAuthTab('email')">Email OTP</button>
-                <button class="auth-tab" onclick="switchAuthTab('login')">Password</button>
                 <button class="auth-tab" onclick="switchAuthTab('special')">API Key</button>
             </div>
 
@@ -1447,20 +1446,11 @@
                 <button onclick="resetAuth()"
                     style="background: none; border: none; color: var(--text-secondary); width: 100%; margin-top: 1rem; cursor: pointer;">Cancel</button>
             </div>
+
+
         </div>
 
-        <!-- Password Login Form -->
-        <div id="auth-login" class="auth-form">
-            <div class="form-group">
-                <label class="form-label">Username</label>
-                <input type="text" id="auth-username" class="form-input" placeholder="username">
-            </div>
-            <div class="form-group">
-                <label class="form-label">Password</label>
-                <input type="password" id="auth-password" class="form-input" placeholder="••••••••">
-            </div>
-            <button class="auth-btn" onclick="loginPassword()">Sign In</button>
-        </div>
+
 
         <!-- Special API Key Form -->
         <div id="auth-special" class="auth-form">
