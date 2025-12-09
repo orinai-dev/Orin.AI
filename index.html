@@ -1534,6 +1534,7 @@
 
         // --- Authentication Logic ---
         let currentAuthEmail = '';
+        let currentVerificationToken = '';
 
         function switchAuthTab(tab) {
             // Update tabs
@@ -1616,6 +1617,11 @@
                         completeLogin(data.api_key, data.session_token);
                     } else {
                         // Registration needed (Success but no key = New User)
+                        // Store verification token
+                        if (data.verification_token) {
+                            currentVerificationToken = data.verification_token;
+                        }
+
                         document.getElementById('step-otp').style.display = 'none';
                         document.getElementById('step-register').style.display = 'block';
                         showAuthError(''); // Clear any errors
@@ -1659,7 +1665,8 @@
                     body: JSON.stringify({
                         email: currentAuthEmail,
                         username: username,
-                        password: password
+                        password: password,
+                        verification_token: currentVerificationToken
                     })
                 });
 
