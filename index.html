@@ -1307,6 +1307,8 @@
                 </div>
             </div>
 
+
+
             <div class="input-area">
                 <div class="input-wrapper">
                     <button class="deep-search-toggle" id="deep-search-toggle" onclick="toggleDeepSearch()"
@@ -1428,33 +1430,52 @@
                 </div>
             </div>
 
-            <!-- Password Login Form -->
-            <div id="auth-login" class="auth-form">
+            <!-- Step 3: Registration -->
+            <div id="step-register" style="display: none;">
+                <p style="color: #a1a1aa; margin-bottom: 1.5rem; font-size: 0.9rem;">
+                    Create your account to continue.
+                </p>
                 <div class="form-group">
                     <label class="form-label">Username</label>
-                    <input type="text" id="auth-username" class="form-input" placeholder="username">
+                    <input type="text" id="reg-username" class="form-input" placeholder="Choose a Username">
                 </div>
                 <div class="form-group">
                     <label class="form-label">Password</label>
-                    <input type="password" id="auth-password" class="form-input" placeholder="••••••••">
+                    <input type="password" id="reg-password" class="form-input" placeholder="Create Password">
                 </div>
-                <button class="auth-btn" onclick="loginPassword()">Sign In</button>
-            </div>
-
-            <!-- Special API Key Form -->
-            <div id="auth-special" class="auth-form">
-                <div class="form-group">
-                    <label class="form-label">Special API Key</label>
-                    <input type="text" id="auth-api-key" class="form-input" placeholder="ORIN-XXXX-XXXX"
-                        style="font-family: monospace;">
-                </div>
-                <button class="auth-btn" onclick="loginAPI()">Connect</button>
-            </div>
-
-            <div id="auth-error"
-                style="color: #ef4444; text-align: center; margin-top: 1rem; font-size: 0.9rem; min-height: 1.2rem;">
+                <button class="auth-btn" onclick="registerUser()">Create Account</button>
+                <button onclick="resetAuth()"
+                    style="background: none; border: none; color: var(--text-secondary); width: 100%; margin-top: 1rem; cursor: pointer;">Cancel</button>
             </div>
         </div>
+
+        <!-- Password Login Form -->
+        <div id="auth-login" class="auth-form">
+            <div class="form-group">
+                <label class="form-label">Username</label>
+                <input type="text" id="auth-username" class="form-input" placeholder="username">
+            </div>
+            <div class="form-group">
+                <label class="form-label">Password</label>
+                <input type="password" id="auth-password" class="form-input" placeholder="••••••••">
+            </div>
+            <button class="auth-btn" onclick="loginPassword()">Sign In</button>
+        </div>
+
+        <!-- Special API Key Form -->
+        <div id="auth-special" class="auth-form">
+            <div class="form-group">
+                <label class="form-label">Special API Key</label>
+                <input type="text" id="auth-api-key" class="form-input" placeholder="ORIN-XXXX-XXXX"
+                    style="font-family: monospace;">
+            </div>
+            <button class="auth-btn" onclick="loginAPI()">Connect</button>
+        </div>
+
+        <div id="auth-error"
+            style="color: #ef4444; text-align: center; margin-top: 1rem; font-size: 0.9rem; min-height: 1.2rem;">
+        </div>
+    </div>
     </div>
 
     <div id="publisher-modal" class="modal" style="z-index: 400;">
@@ -1601,12 +1622,11 @@
                         // Login successful
                         completeLogin(data.api_key, data.session_token);
                     } else {
-                        // Registration needed (not implemented in this modal yet, but we can auto-register or show message)
-                        // For now, let's assume auto-registration or show error
+                        // Registration needed
                         if (data.message.includes('register')) {
-                            // Auto-register flow or prompt for username/password
-                            // For simplicity, let's prompt for username/password in a new step or just show error
-                            showAuthError('Account not found. Please register via API or Admin.');
+                            document.getElementById('step-otp').style.display = 'none';
+                            document.getElementById('step-register').style.display = 'block';
+                            showAuthError(''); // Clear any errors
                         }
                     }
                 } else {
@@ -1623,7 +1643,49 @@
         function resetAuth() {
             document.getElementById('step-email').style.display = 'block';
             document.getElementById('step-otp').style.display = 'none';
+            document.getElementById('step-register').style.display = 'none';
             document.getElementById('auth-error').textContent = '';
+            document.getElementById('auth-email-input').value = '';
+            document.getElementById('auth-otp-input').value = '';
+            document.getElementById('reg-username').value = '';
+            document.getElementById('reg-password').value = '';
+        }
+
+        async function registerUser() {
+            const username = document.getElementById('reg-username').value.trim();
+            const password = document.getElementById('reg-password').value.trim();
+
+            if (!username || !password) return showAuthError('Please fill all fields');
+
+            const btn = event.target;
+            btn.disabled = true;
+            btn.textContent = 'Creating Account...';
+
+            try {
+                const res = await fetch(`${BASE_URL}/auth/register`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        email: currentAuthEmail,
+                        username: username,
+                        password: password
+                    })
+                });
+
+                const data = await res.json();
+
+                if (res.ok) {
+                    completeLogin(data.api_key, data.session_token);
+                } else {
+                    showAuthError(data.detail || 'Registration failed');
+                    btn.disabled = false;
+                    btn.textContent = 'Create Account';
+                }
+            } catch (e) {
+                showAuthError('Network error');
+                btn.disabled = false;
+                btn.textContent = 'Create Account';
+            }
         }
 
         async function loginPassword() {
