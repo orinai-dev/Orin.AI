@@ -525,7 +525,7 @@
             border: 1px solid rgba(255, 255, 255, 0.15);
             color: rgba(255, 255, 255, 0.7);
             cursor: pointer;
-            padding: 0.25rem 0.5rem;
+            padding: 0.3rem;
             font-size: 0.7rem;
             display: flex;
             align-items: center;
@@ -1135,6 +1135,132 @@
             box-shadow: 0 0 15px rgba(139, 92, 246, 0.5);
             opacity: 1;
         }
+
+        /* Auth Modal */
+        .auth-modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(10, 10, 30, 0.9);
+            backdrop-filter: blur(20px);
+            z-index: 1000;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.3s;
+        }
+
+        .auth-modal.active {
+            opacity: 1;
+            pointer-events: auto;
+        }
+
+        .auth-card {
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid var(--glass-border);
+            border-radius: 1.5rem;
+            padding: 2.5rem;
+            width: 100%;
+            max-width: 450px;
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+        }
+
+        .auth-tabs {
+            display: flex;
+            gap: 1rem;
+            margin-bottom: 2rem;
+            border-bottom: 1px solid var(--glass-border);
+            padding-bottom: 1rem;
+        }
+
+        .auth-tab {
+            background: none;
+            border: none;
+            color: var(--text-secondary);
+            font-size: 1rem;
+            cursor: pointer;
+            padding: 0.5rem;
+            position: relative;
+            transition: color 0.3s;
+        }
+
+        .auth-tab.active {
+            color: white;
+            font-weight: 600;
+        }
+
+        .auth-tab.active::after {
+            content: '';
+            position: absolute;
+            bottom: -1.1rem;
+            left: 0;
+            width: 100%;
+            height: 2px;
+            background: linear-gradient(90deg, var(--primary), var(--secondary));
+        }
+
+        .auth-form {
+            display: none;
+        }
+
+        .auth-form.active {
+            display: block;
+        }
+
+        .form-group {
+            margin-bottom: 1.5rem;
+        }
+
+        .form-label {
+            display: block;
+            margin-bottom: 0.5rem;
+            color: var(--text-secondary);
+            font-size: 0.9rem;
+        }
+
+        .form-input {
+            width: 100%;
+            padding: 0.75rem 1rem;
+            background: rgba(0, 0, 0, 0.2);
+            border: 1px solid var(--glass-border);
+            border-radius: 0.5rem;
+            color: white;
+            font-family: 'Outfit', sans-serif;
+            font-size: 1rem;
+            transition: all 0.3s;
+        }
+
+        .form-input:focus {
+            outline: none;
+            border-color: var(--primary);
+            box-shadow: 0 0 0 2px rgba(139, 92, 246, 0.2);
+        }
+
+        .auth-btn {
+            width: 100%;
+            padding: 0.75rem;
+            background: linear-gradient(135deg, var(--primary), var(--secondary));
+            border: none;
+            border-radius: 0.5rem;
+            color: white;
+            font-weight: 600;
+            cursor: pointer;
+            transition: transform 0.2s;
+        }
+
+        .auth-btn:hover {
+            transform: translateY(-2px);
+        }
+
+        .auth-btn:disabled {
+            opacity: 0.7;
+            cursor: not-allowed;
+            transform: none;
+        }
     </style>
 
 </head>
@@ -1264,6 +1390,73 @@
         </div>
     </div>
 
+    <!-- Auth Modal -->
+    <div id="auth-modal" class="auth-modal active">
+        <div class="auth-card">
+            <div style="text-align: center; margin-bottom: 2rem;">
+                <div
+                    style="font-size: 2rem; font-weight: 700; background: linear-gradient(135deg, #667eea 0%, #764ba2 25%, #f093fb 50%, #4facfe 75%, #00f2fe 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent; margin-bottom: 0.5rem;">
+                    Orin.AI
+                </div>
+                <div style="color: var(--text-secondary);">Sign in to continue</div>
+            </div>
+
+            <div class="auth-tabs">
+                <button class="auth-tab active" onclick="switchAuthTab('email')">Email OTP</button>
+                <button class="auth-tab" onclick="switchAuthTab('login')">Password</button>
+                <button class="auth-tab" onclick="switchAuthTab('special')">API Key</button>
+            </div>
+
+            <!-- Email OTP Form -->
+            <div id="auth-email" class="auth-form active">
+                <div id="step-email">
+                    <div class="form-group">
+                        <label class="form-label">Email Address</label>
+                        <input type="email" id="auth-email-input" class="form-input" placeholder="you@example.com">
+                    </div>
+                    <button class="auth-btn" onclick="sendOTP()">Send Code</button>
+                </div>
+                <div id="step-otp" style="display: none;">
+                    <div class="form-group">
+                        <label class="form-label">Verification Code</label>
+                        <input type="text" id="auth-otp-input" class="form-input" placeholder="123456" maxlength="6"
+                            style="letter-spacing: 0.5rem; text-align: center; font-size: 1.5rem;">
+                    </div>
+                    <button class="auth-btn" onclick="verifyOTP()">Verify & Login</button>
+                    <button onclick="resetAuth()"
+                        style="background: none; border: none; color: var(--text-secondary); width: 100%; margin-top: 1rem; cursor: pointer;">Back</button>
+                </div>
+            </div>
+
+            <!-- Password Login Form -->
+            <div id="auth-login" class="auth-form">
+                <div class="form-group">
+                    <label class="form-label">Username</label>
+                    <input type="text" id="auth-username" class="form-input" placeholder="username">
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Password</label>
+                    <input type="password" id="auth-password" class="form-input" placeholder="••••••••">
+                </div>
+                <button class="auth-btn" onclick="loginPassword()">Sign In</button>
+            </div>
+
+            <!-- Special API Key Form -->
+            <div id="auth-special" class="auth-form">
+                <div class="form-group">
+                    <label class="form-label">Special API Key</label>
+                    <input type="text" id="auth-api-key" class="form-input" placeholder="ORIN-XXXX-XXXX"
+                        style="font-family: monospace;">
+                </div>
+                <button class="auth-btn" onclick="loginAPI()">Connect</button>
+            </div>
+
+            <div id="auth-error"
+                style="color: #ef4444; text-align: center; margin-top: 1rem; font-size: 0.9rem; min-height: 1.2rem;">
+            </div>
+        </div>
+    </div>
+
     <div id="publisher-modal" class="modal" style="z-index: 400;">
         <div class="publisher-modal-content">
             <div class="modal-progress-container">
@@ -1327,6 +1520,174 @@
         const conversationList = document.getElementById('conversation-list');
 
         const BASE_URL = 'https://orin-ai-orin-ai-engine.hf.space';
+
+        // --- Authentication Logic ---
+        let currentAuthEmail = '';
+
+        function switchAuthTab(tab) {
+            // Update tabs
+            document.querySelectorAll('.auth-tab').forEach(t => t.classList.remove('active'));
+            event.target.classList.add('active');
+
+            // Update forms
+            document.querySelectorAll('.auth-form').forEach(f => f.classList.remove('active'));
+            document.getElementById('auth-' + tab).classList.add('active');
+
+            // Clear error
+            document.getElementById('auth-error').textContent = '';
+        }
+
+        function showAuthError(msg) {
+            const el = document.getElementById('auth-error');
+            el.textContent = msg;
+            el.style.animation = 'none';
+            el.offsetHeight; /* trigger reflow */
+            el.style.animation = 'shake 0.4s ease-in-out';
+        }
+
+        async function sendOTP() {
+            const email = document.getElementById('auth-email-input').value.trim();
+            if (!email) return showAuthError('Please enter your email');
+
+            const btn = event.target;
+            const originalText = btn.textContent;
+            btn.disabled = true;
+            btn.textContent = 'Sending...';
+
+            try {
+                const res = await fetch(`${BASE_URL}/auth/send-otp`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ email })
+                });
+
+                const data = await res.json();
+
+                if (res.ok) {
+                    currentAuthEmail = email;
+                    document.getElementById('step-email').style.display = 'none';
+                    document.getElementById('step-otp').style.display = 'block';
+                    document.getElementById('auth-otp-input').focus();
+                } else {
+                    showAuthError(data.detail || 'Failed to send code');
+                }
+            } catch (e) {
+                showAuthError('Network error. Please try again.');
+            } finally {
+                btn.disabled = false;
+                btn.textContent = originalText;
+            }
+        }
+
+        async function verifyOTP() {
+            const code = document.getElementById('auth-otp-input').value.trim();
+            if (!code || code.length !== 6) return showAuthError('Enter 6-digit code');
+
+            const btn = event.target;
+            btn.disabled = true;
+            btn.textContent = 'Verifying...';
+
+            try {
+                const res = await fetch(`${BASE_URL}/auth/verify-otp`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ email: currentAuthEmail, code })
+                });
+
+                const data = await res.json();
+
+                if (res.ok) {
+                    if (data.api_key) {
+                        // Login successful
+                        completeLogin(data.api_key, data.session_token);
+                    } else {
+                        // Registration needed (not implemented in this modal yet, but we can auto-register or show message)
+                        // For now, let's assume auto-registration or show error
+                        if (data.message.includes('register')) {
+                            // Auto-register flow or prompt for username/password
+                            // For simplicity, let's prompt for username/password in a new step or just show error
+                            showAuthError('Account not found. Please register via API or Admin.');
+                        }
+                    }
+                } else {
+                    showAuthError(data.detail || 'Invalid code');
+                }
+            } catch (e) {
+                showAuthError('Verification failed');
+            } finally {
+                btn.disabled = false;
+                btn.textContent = 'Verify & Login';
+            }
+        }
+
+        function resetAuth() {
+            document.getElementById('step-email').style.display = 'block';
+            document.getElementById('step-otp').style.display = 'none';
+            document.getElementById('auth-error').textContent = '';
+        }
+
+        async function loginPassword() {
+            const username = document.getElementById('auth-username').value.trim();
+            const password = document.getElementById('auth-password').value.trim();
+
+            if (!username || !password) return showAuthError('Enter username and password');
+
+            const btn = event.target;
+            btn.disabled = true;
+            btn.textContent = 'Signing in...';
+
+            try {
+                const res = await fetch(`${BASE_URL}/auth/login`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ username, password })
+                });
+
+                const data = await res.json();
+
+                if (res.ok) {
+                    completeLogin(data.api_key, data.session_token);
+                } else {
+                    showAuthError(data.detail || 'Login failed');
+                }
+            } catch (e) {
+                showAuthError('Network error');
+            } finally {
+                btn.disabled = false;
+                btn.textContent = 'Sign In';
+            }
+        }
+
+        async function loginAPI() {
+            const key = document.getElementById('auth-api-key').value.trim();
+            if (!key) return showAuthError('Enter API Key');
+
+            const btn = event.target;
+            btn.disabled = true;
+            btn.textContent = 'Connecting...';
+
+            // Verify key by checking device status
+            const isValid = await verifyDevice(key);
+
+            if (isValid) {
+                completeLogin(key, null);
+            } else {
+                showAuthError('Invalid API Key or Device Limit Reached');
+                btn.disabled = false;
+                btn.textContent = 'Connect';
+            }
+        }
+
+        function completeLogin(key, token) {
+            localStorage.setItem('ai_key', key);
+            if (token) localStorage.setItem('session_token', token);
+
+            document.getElementById('auth-modal').classList.remove('active');
+            apiKey = key;
+
+            // Show success toast
+            showFeedbackToast('positive'); // Reusing toast for success
+        }
         const ADMIN_LOCK = '20091220'; // Admin lock for model restart
 
         // State
@@ -1654,10 +2015,25 @@
 
         async function checkApiKey() {
             if (!apiKey) {
-                modal.style.display = 'flex';
+                // Show new Auth Modal instead of old simple modal
+                document.getElementById('auth-modal').classList.add('active');
+                // Hide old modal just in case
+                modal.style.display = 'none';
             } else {
                 // Verify device if API key exists
                 await verifyDevice(apiKey);
+            }
+        }
+
+        function openSettings() {
+            // Show new Auth Modal
+            document.getElementById('auth-modal').classList.add('active');
+            switchAuthTab('special'); // Default to API key tab for settings
+
+            // Pre-fill existing key if available
+            const savedKey = localStorage.getItem('ai_key');
+            if (savedKey) {
+                document.getElementById('auth-api-key').value = savedKey;
             }
         }
 
@@ -1770,32 +2146,7 @@
             }
         }
 
-        function openSettings() {
-            modal.style.display = 'flex';
-            // Pre-fill existing key if available
-            const savedKey = localStorage.getItem('ai_key');
-            if (savedKey) {
-                document.getElementById('api-key-input').value = savedKey;
-            }
-        }
 
-        async function saveKey() {
-            const input = document.getElementById('api-key-input');
-            if (input.value.trim()) {
-                const newKey = input.value.trim();
-
-                // Verify device before accepting the key
-                const canProceed = await verifyDevice(newKey);
-
-                if (canProceed) {
-                    apiKey = newKey;
-                    localStorage.setItem('ai_key', apiKey);
-                    modal.style.display = 'none';
-                } else {
-                    input.value = '';
-                }
-            }
-        }
 
         function toggleDeepSearch() {
             isDeepSearchMode = !isDeepSearchMode;
