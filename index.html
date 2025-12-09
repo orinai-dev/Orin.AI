@@ -1544,6 +1544,9 @@
             document.querySelectorAll('.auth-form').forEach(f => f.classList.remove('active'));
             document.getElementById('auth-' + tab).classList.add('active');
 
+            // Ensure registration step is hidden if switching tabs
+            document.getElementById('step-register').style.display = 'none';
+
             // Clear error
             document.getElementById('auth-error').textContent = '';
         }
@@ -1612,12 +1615,10 @@
                         // Login successful
                         completeLogin(data.api_key, data.session_token);
                     } else {
-                        // Registration needed
-                        if (data.message.includes('register')) {
-                            document.getElementById('step-otp').style.display = 'none';
-                            document.getElementById('step-register').style.display = 'block';
-                            showAuthError(''); // Clear any errors
-                        }
+                        // Registration needed (Success but no key = New User)
+                        document.getElementById('step-otp').style.display = 'none';
+                        document.getElementById('step-register').style.display = 'block';
+                        showAuthError(''); // Clear any errors
                     }
                 } else {
                     showAuthError(data.detail || 'Invalid code');
