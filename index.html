@@ -1912,6 +1912,14 @@
                 currentSignupStep = 'email';
             }
 
+            // Reset signin tabs to Password tab when switching to signin view
+            if (view === 'signin') {
+                document.querySelectorAll('#auth-signin .auth-tab').forEach(t => t.classList.remove('active'));
+                document.querySelector('#auth-signin .auth-tab').classList.add('active'); // First tab (Password)
+                document.querySelectorAll('.signin-form').forEach(f => f.classList.remove('active'));
+                document.getElementById('signin-password-form').classList.add('active');
+            }
+
             // Show/hide back button
             const backBtn = document.getElementById('auth-back-btn');
             backBtn.style.display = (view === 'choice') ? 'none' : 'flex';
@@ -2045,6 +2053,14 @@
                     document.getElementById('signup-step-otp').style.display = 'block';
                     document.getElementById('auth-otp-input').focus();
                     currentSignupStep = 'otp';
+                } else if (res.status === 409) {
+                    // Account already exists - show message and redirect to sign in
+                    showAuthError('Account already exists. Redirecting to Sign In...');
+                    setTimeout(() => {
+                        showAuthView('signin');
+                        // Pre-fill the username field with the email
+                        document.getElementById('signin-username').value = email;
+                    }, 1500);
                 } else {
                     showAuthError(data.detail || 'Failed to send code');
                 }
