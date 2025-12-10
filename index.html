@@ -1568,10 +1568,15 @@
                     <p style="color: #a1a1aa; margin-bottom: 1rem; font-size: 0.9rem;">
                         Create your account.
                     </p>
-                    <div class="form-group">
-                        <label class="form-label">Display Name</label>
-                        <input type="text" id="reg-displayname" class="form-input"
-                            placeholder="Your name (for conversations)">
+                    <div style="display: flex; gap: 0.75rem;">
+                        <div class="form-group" style="flex: 1;">
+                            <label class="form-label">First Name</label>
+                            <input type="text" id="reg-firstname" class="form-input" placeholder="First name">
+                        </div>
+                        <div class="form-group" style="flex: 1;">
+                            <label class="form-label">Last Name</label>
+                            <input type="text" id="reg-lastname" class="form-input" placeholder="Last name">
+                        </div>
                     </div>
                     <div class="form-group">
                         <label class="form-label">Username</label>
@@ -1889,10 +1894,12 @@
         }
 
         async function registerUser() {
-            const displayName = document.getElementById('reg-displayname').value.trim();
+            const firstName = document.getElementById('reg-firstname').value.trim();
+            const lastName = document.getElementById('reg-lastname').value.trim();
             const username = document.getElementById('reg-username').value.trim();
             const password = document.getElementById('reg-password').value.trim();
 
+            if (!firstName) return showAuthError('Please enter your first name');
             if (!username || !password) return showAuthError('Please fill all fields');
 
             // Validate password
@@ -1911,7 +1918,8 @@
                         email: currentAuthEmail,
                         username: username,
                         password: password,
-                        display_name: displayName || username,
+                        first_name: firstName,
+                        last_name: lastName || '',
                         verification_token: currentVerificationToken
                     })
                 });
@@ -1919,8 +1927,9 @@
                 const data = await res.json();
 
                 if (res.ok) {
-                    // Store display name for conversations
-                    if (displayName) localStorage.setItem('orin_display_name', displayName);
+                    // Store first name in browser for greeting user
+                    localStorage.setItem('orin_user_firstname', firstName);
+                    if (lastName) localStorage.setItem('orin_user_lastname', lastName);
                     completeLogin(data.api_key, data.session_token);
                 } else {
                     showAuthError(data.detail || 'Registration failed');
@@ -1982,6 +1991,18 @@
                 const rememberCheckbox = document.getElementById('signin-remember');
                 if (rememberCheckbox) rememberCheckbox.checked = true;
             }
+        }
+
+        // Get user's first name for greeting (from localStorage)
+        function getUserFirstName() {
+            return localStorage.getItem('orin_user_firstname') || null;
+        }
+
+        // Get user's full name for display
+        function getUserFullName() {
+            const first = localStorage.getItem('orin_user_firstname') || '';
+            const last = localStorage.getItem('orin_user_lastname') || '';
+            return (first + ' ' + last).trim() || null;
         }
 
         async function loginAPI() {
