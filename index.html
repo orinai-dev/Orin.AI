@@ -1211,6 +1211,52 @@
             display: block;
         }
 
+        .auth-view {
+            display: none;
+        }
+
+        .auth-view.active {
+            display: block;
+        }
+
+        .back-btn {
+            background: none;
+            border: none;
+            color: var(--text-secondary);
+            width: 100%;
+            margin-top: 1rem;
+            cursor: pointer;
+            font-size: 0.9rem;
+            transition: color 0.2s;
+        }
+
+        .back-btn:hover {
+            color: white;
+        }
+
+        .auth-btn-secondary {
+            background: transparent;
+            border: 1px solid var(--primary);
+            color: var(--primary);
+        }
+
+        .auth-btn-secondary:hover {
+            background: rgba(139, 92, 246, 0.1);
+        }
+
+        .req-item {
+            color: #71717a;
+            transition: color 0.2s;
+        }
+
+        .req-item.valid {
+            color: #22c55e;
+        }
+
+        .req-item.invalid {
+            color: #ef4444;
+        }
+
         .form-group {
             margin-bottom: 1.5rem;
         }
@@ -1400,72 +1446,109 @@
                     style="font-size: 2rem; font-weight: 700; background: linear-gradient(135deg, #667eea 0%, #764ba2 25%, #f093fb 50%, #4facfe 75%, #00f2fe 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent; margin-bottom: 0.5rem;">
                     Orin.AI
                 </div>
-                <div style="color: var(--text-secondary);">Sign in to continue</div>
+                <div id="auth-subtitle" style="color: var(--text-secondary);">Welcome</div>
             </div>
 
-            <div class="auth-tabs">
-                <button class="auth-tab active" onclick="switchAuthTab('email')">Email OTP</button>
-                <button class="auth-tab" onclick="switchAuthTab('special')">API Key</button>
+            <!-- Initial Choice View -->
+            <div id="auth-choice" class="auth-view active">
+                <button class="auth-btn" onclick="showAuthView('signin')" style="margin-bottom: 1rem;">Sign In</button>
+                <button class="auth-btn auth-btn-secondary" onclick="showAuthView('signup')">Sign Up</button>
             </div>
 
-            <!-- Email OTP Form -->
-            <div id="auth-email" class="auth-form active">
-                <div id="step-email">
+            <!-- Sign In View -->
+            <div id="auth-signin" class="auth-view">
+                <div class="form-group">
+                    <label class="form-label">Username or Email</label>
+                    <input type="text" id="signin-username" class="form-input" placeholder="username or email">
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Password</label>
+                    <input type="password" id="signin-password" class="form-input" placeholder="••••••••">
+                </div>
+                <button class="auth-btn" onclick="loginPassword()">Sign In</button>
+
+                <div style="text-align: center; margin-top: 1.5rem; color: var(--text-secondary); font-size: 0.9rem;">
+                    Don't have an account? <a href="#" onclick="showAuthView('signup'); return false;"
+                        style="color: var(--primary);">Sign Up</a>
+                </div>
+
+                <!-- Advanced: API Key -->
+                <details style="margin-top: 1.5rem;">
+                    <summary style="color: var(--text-secondary); cursor: pointer; font-size: 0.85rem;">Advanced: API
+                        Key</summary>
+                    <div style="margin-top: 1rem;">
+                        <div class="form-group">
+                            <input type="text" id="auth-api-key" class="form-input" placeholder="ORIN-XXXX-XXXX"
+                                style="font-family: monospace;">
+                        </div>
+                        <button class="auth-btn" onclick="loginAPI()">Connect with API Key</button>
+                    </div>
+                </details>
+
+                <button onclick="showAuthView('choice')" class="back-btn">← Back</button>
+            </div>
+
+            <!-- Sign Up View -->
+            <div id="auth-signup" class="auth-view">
+                <!-- Step 1: Email -->
+                <div id="signup-step-email">
                     <div class="form-group">
                         <label class="form-label">Email Address</label>
                         <input type="email" id="auth-email-input" class="form-input" placeholder="you@example.com">
                     </div>
-                    <button class="auth-btn" onclick="sendOTP()">Send Code</button>
+                    <button class="auth-btn" onclick="sendOTP()">Send Verification Code</button>
+                    <button onclick="showAuthView('choice')" class="back-btn">← Back</button>
                 </div>
-                <div id="step-otp" style="display: none;">
+
+                <!-- Step 2: OTP -->
+                <div id="signup-step-otp" style="display: none;">
+                    <p style="color: #a1a1aa; margin-bottom: 1rem; font-size: 0.9rem;">
+                        Enter the 6-digit code sent to your email.
+                    </p>
                     <div class="form-group">
                         <label class="form-label">Verification Code</label>
                         <input type="text" id="auth-otp-input" class="form-input" placeholder="123456" maxlength="6"
                             style="letter-spacing: 0.5rem; text-align: center; font-size: 1.5rem;">
                     </div>
-                    <button class="auth-btn" onclick="verifyOTP()">Verify & Login</button>
-                    <button onclick="resetAuth()"
-                        style="background: none; border: none; color: var(--text-secondary); width: 100%; margin-top: 1rem; cursor: pointer;">Back</button>
+                    <button class="auth-btn" onclick="verifyOTP()">Verify Code</button>
+                    <button onclick="backToEmailStep()" class="back-btn">← Back</button>
+                </div>
+
+                <!-- Step 3: Create Account -->
+                <div id="signup-step-create" style="display: none;">
+                    <p style="color: #a1a1aa; margin-bottom: 1rem; font-size: 0.9rem;">
+                        Create your account credentials.
+                    </p>
+                    <div class="form-group">
+                        <label class="form-label">Username</label>
+                        <input type="text" id="reg-username" class="form-input" placeholder="Choose a username">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Password</label>
+                        <input type="password" id="reg-password" class="form-input" placeholder="8-12 characters"
+                            oninput="validatePasswordRealtime()">
+                        <div id="password-requirements" style="margin-top: 0.5rem; font-size: 0.75rem;">
+                            <div id="req-length" class="req-item">• 8-12 characters</div>
+                            <div id="req-uppercase" class="req-item">• Uppercase letter</div>
+                            <div id="req-lowercase" class="req-item">• Lowercase letter</div>
+                            <div id="req-number" class="req-item">• Number</div>
+                            <div id="req-symbol" class="req-item">• Symbol (!@#$%^&*)</div>
+                        </div>
+                    </div>
+                    <button class="auth-btn" onclick="registerUser()">Create Account</button>
+                    <button onclick="backToOtpStep()" class="back-btn">← Back</button>
+                </div>
+
+                <div style="text-align: center; margin-top: 1.5rem; color: var(--text-secondary); font-size: 0.9rem;">
+                    Already have an account? <a href="#" onclick="showAuthView('signin'); return false;"
+                        style="color: var(--primary);">Sign In</a>
                 </div>
             </div>
 
-            <!-- Step 3: Registration -->
-            <div id="step-register" style="display: none;">
-                <p style="color: #a1a1aa; margin-bottom: 1.5rem; font-size: 0.9rem;">
-                    Create your account to continue.
-                </p>
-                <div class="form-group">
-                    <label class="form-label">Username</label>
-                    <input type="text" id="reg-username" class="form-input" placeholder="Choose a Username">
-                </div>
-                <div class="form-group">
-                    <label class="form-label">Password</label>
-                    <input type="password" id="reg-password" class="form-input" placeholder="Create Password">
-                </div>
-                <button class="auth-btn" onclick="registerUser()">Create Account</button>
-                <button onclick="resetAuth()"
-                    style="background: none; border: none; color: var(--text-secondary); width: 100%; margin-top: 1rem; cursor: pointer;">Cancel</button>
+            <div id="auth-error"
+                style="color: #ef4444; text-align: center; margin-top: 1rem; font-size: 0.9rem; min-height: 1.2rem;">
             </div>
-
-
         </div>
-
-
-
-        <!-- Special API Key Form -->
-        <div id="auth-special" class="auth-form">
-            <div class="form-group">
-                <label class="form-label">Special API Key</label>
-                <input type="text" id="auth-api-key" class="form-input" placeholder="ORIN-XXXX-XXXX"
-                    style="font-family: monospace;">
-            </div>
-            <button class="auth-btn" onclick="loginAPI()">Connect</button>
-        </div>
-
-        <div id="auth-error"
-            style="color: #ef4444; text-align: center; margin-top: 1rem; font-size: 0.9rem; min-height: 1.2rem;">
-        </div>
-    </div>
     </div>
 
     <div id="publisher-modal" class="modal" style="z-index: 400;">
@@ -1537,19 +1620,72 @@
         let currentVerificationToken = '';
 
         function switchAuthTab(tab) {
-            // Update tabs
-            document.querySelectorAll('.auth-tab').forEach(t => t.classList.remove('active'));
-            event.target.classList.add('active');
+            // Legacy function - kept for compatibility
+            showAuthView(tab === 'email' ? 'signup' : 'signin');
+        }
 
-            // Update forms
-            document.querySelectorAll('.auth-form').forEach(f => f.classList.remove('active'));
-            document.getElementById('auth-' + tab).classList.add('active');
+        function showAuthView(view) {
+            // Hide all views
+            document.querySelectorAll('.auth-view').forEach(v => v.classList.remove('active'));
 
-            // Ensure registration step is hidden if switching tabs
-            document.getElementById('step-register').style.display = 'none';
+            // Show selected view
+            const viewEl = document.getElementById('auth-' + view);
+            if (viewEl) viewEl.classList.add('active');
+
+            // Update subtitle
+            const subtitle = document.getElementById('auth-subtitle');
+            if (view === 'choice') subtitle.textContent = 'Welcome';
+            else if (view === 'signin') subtitle.textContent = 'Sign in to continue';
+            else if (view === 'signup') subtitle.textContent = 'Create your account';
+
+            // Reset signup steps when switching views
+            if (view === 'signup') {
+                document.getElementById('signup-step-email').style.display = 'block';
+                document.getElementById('signup-step-otp').style.display = 'none';
+                document.getElementById('signup-step-create').style.display = 'none';
+            }
 
             // Clear error
             document.getElementById('auth-error').textContent = '';
+        }
+
+        function backToEmailStep() {
+            document.getElementById('signup-step-otp').style.display = 'none';
+            document.getElementById('signup-step-email').style.display = 'block';
+        }
+
+        function backToOtpStep() {
+            document.getElementById('signup-step-create').style.display = 'none';
+            document.getElementById('signup-step-otp').style.display = 'block';
+        }
+
+        function validatePasswordRealtime() {
+            const password = document.getElementById('reg-password').value;
+
+            const checks = {
+                'req-length': password.length >= 8 && password.length <= 12,
+                'req-uppercase': /[A-Z]/.test(password),
+                'req-lowercase': /[a-z]/.test(password),
+                'req-number': /[0-9]/.test(password),
+                'req-symbol': /[!@#$%^&*(),.?":{}|<>]/.test(password)
+            };
+
+            for (const [id, valid] of Object.entries(checks)) {
+                const el = document.getElementById(id);
+                el.classList.remove('valid', 'invalid');
+                if (password.length > 0) {
+                    el.classList.add(valid ? 'valid' : 'invalid');
+                }
+            }
+        }
+
+        function validatePassword(password) {
+            if (password.length < 8 || password.length > 12) return 'Password must be 8-12 characters';
+            if (!/[A-Z]/.test(password)) return 'Password must contain an uppercase letter';
+            if (!/[a-z]/.test(password)) return 'Password must contain a lowercase letter';
+            if (!/[0-9]/.test(password)) return 'Password must contain a number';
+            if (!/[!@#$%^&*(),.?":{}|<>]/.test(password)) return 'Password must contain a symbol';
+            return null;
         }
 
         function showAuthError(msg) {
@@ -1580,8 +1716,8 @@
 
                 if (res.ok) {
                     currentAuthEmail = email;
-                    document.getElementById('step-email').style.display = 'none';
-                    document.getElementById('step-otp').style.display = 'block';
+                    document.getElementById('signup-step-email').style.display = 'none';
+                    document.getElementById('signup-step-otp').style.display = 'block';
                     document.getElementById('auth-otp-input').focus();
                 } else {
                     showAuthError(data.detail || 'Failed to send code');
@@ -1613,17 +1749,16 @@
 
                 if (res.ok) {
                     if (data.api_key) {
-                        // Login successful
+                        // Login successful (existing user)
                         completeLogin(data.api_key, data.session_token);
                     } else {
-                        // Registration needed (Success but no key = New User)
-                        // Store verification token
+                        // Registration needed (New User)
                         if (data.verification_token) {
                             currentVerificationToken = data.verification_token;
                         }
 
-                        document.getElementById('step-otp').style.display = 'none';
-                        document.getElementById('step-register').style.display = 'block';
+                        document.getElementById('signup-step-otp').style.display = 'none';
+                        document.getElementById('signup-step-create').style.display = 'block';
                         showAuthError(''); // Clear any errors
                     }
                 } else {
@@ -1633,19 +1768,20 @@
                 showAuthError('Verification failed');
             } finally {
                 btn.disabled = false;
-                btn.textContent = 'Verify & Login';
+                btn.textContent = 'Verify Code';
             }
         }
 
         function resetAuth() {
-            document.getElementById('step-email').style.display = 'block';
-            document.getElementById('step-otp').style.display = 'none';
-            document.getElementById('step-register').style.display = 'none';
+            document.getElementById('signup-step-email').style.display = 'block';
+            document.getElementById('signup-step-otp').style.display = 'none';
+            document.getElementById('signup-step-create').style.display = 'none';
             document.getElementById('auth-error').textContent = '';
             document.getElementById('auth-email-input').value = '';
             document.getElementById('auth-otp-input').value = '';
             document.getElementById('reg-username').value = '';
             document.getElementById('reg-password').value = '';
+            showAuthView('choice');
         }
 
         async function registerUser() {
@@ -1653,6 +1789,10 @@
             const password = document.getElementById('reg-password').value.trim();
 
             if (!username || !password) return showAuthError('Please fill all fields');
+
+            // Validate password
+            const passwordError = validatePassword(password);
+            if (passwordError) return showAuthError(passwordError);
 
             const btn = event.target;
             btn.disabled = true;
@@ -1687,10 +1827,10 @@
         }
 
         async function loginPassword() {
-            const username = document.getElementById('auth-username').value.trim();
-            const password = document.getElementById('auth-password').value.trim();
+            const username = document.getElementById('signin-username').value.trim();
+            const password = document.getElementById('signin-password').value.trim();
 
-            if (!username || !password) return showAuthError('Enter username and password');
+            if (!username || !password) return showAuthError('Enter username/email and password');
 
             const btn = event.target;
             btn.disabled = true;
