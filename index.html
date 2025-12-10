@@ -1292,6 +1292,127 @@
             position: relative;
         }
 
+        /* Settings Modal Styles */
+        .settings-modal-content {
+            background: var(--glass-bg);
+            backdrop-filter: blur(20px);
+            border: 1px solid var(--glass-border);
+            border-radius: 1rem;
+            padding: 1.5rem;
+            max-width: 450px;
+            width: 90%;
+            max-height: 85vh;
+            overflow-y: auto;
+        }
+
+        .settings-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1.5rem;
+        }
+
+        .settings-header h2 {
+            font-size: 1.5rem;
+            font-weight: 600;
+            color: var(--text-primary);
+        }
+
+        .close-settings-btn {
+            background: rgba(255, 255, 255, 0.1);
+            border: none;
+            color: #a1a1aa;
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            cursor: pointer;
+            font-size: 1rem;
+            transition: all 0.2s;
+        }
+
+        .close-settings-btn:hover {
+            background: rgba(255, 255, 255, 0.2);
+            color: white;
+        }
+
+        .settings-tabs {
+            display: flex;
+            gap: 0.5rem;
+            margin-bottom: 1.5rem;
+            border-bottom: 1px solid var(--glass-border);
+            padding-bottom: 0.5rem;
+        }
+
+        .settings-tab {
+            background: none;
+            border: none;
+            color: var(--text-secondary);
+            padding: 0.5rem 1rem;
+            cursor: pointer;
+            font-size: 0.9rem;
+            border-radius: 0.5rem;
+            transition: all 0.2s;
+        }
+
+        .settings-tab:hover {
+            background: rgba(255, 255, 255, 0.05);
+        }
+
+        .settings-tab.active {
+            background: rgba(139, 92, 246, 0.2);
+            color: #a78bfa;
+        }
+
+        .settings-content {
+            display: none;
+        }
+
+        .settings-content.active {
+            display: block;
+        }
+
+        .settings-section {
+            background: rgba(0, 0, 0, 0.2);
+            border: 1px solid var(--glass-border);
+            border-radius: 0.75rem;
+            padding: 1rem;
+            margin-bottom: 1rem;
+        }
+
+        .settings-section h3 {
+            font-size: 1rem;
+            font-weight: 600;
+            color: var(--text-primary);
+            margin-bottom: 1rem;
+        }
+
+        .settings-footer {
+            margin-top: 1.5rem;
+            padding-top: 1rem;
+            border-top: 1px solid var(--glass-border);
+        }
+
+        .signout-btn {
+            width: 100%;
+            padding: 0.75rem;
+            background: rgba(239, 68, 68, 0.1);
+            border: 1px solid rgba(239, 68, 68, 0.3);
+            color: #ef4444;
+            border-radius: 0.5rem;
+            cursor: pointer;
+            font-size: 0.95rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+            transition: all 0.2s;
+        }
+
+        .signout-btn:hover {
+            background: rgba(239, 68, 68, 0.2);
+        }
+
+
         .form-group {
             margin-bottom: 1.5rem;
         }
@@ -1605,6 +1726,89 @@
 
             <div id="auth-error"
                 style="color: #ef4444; text-align: center; margin-top: 1rem; font-size: 0.9rem; min-height: 1.2rem;">
+            </div>
+        </div>
+    </div>
+
+    <!-- Settings Modal -->
+    <div id="settings-modal" class="modal" style="z-index: 350;">
+        <div class="settings-modal-content">
+            <div class="settings-header">
+                <h2>Settings</h2>
+                <button class="close-settings-btn" onclick="closeSettings()">✕</button>
+            </div>
+
+            <!-- Settings Tabs -->
+            <div class="settings-tabs">
+                <button class="settings-tab active" onclick="switchSettingsTab('profile')">Profile Details</button>
+                <button class="settings-tab" onclick="switchSettingsTab('api')">Advanced API</button>
+            </div>
+
+            <!-- Profile Details Tab -->
+            <div id="settings-profile" class="settings-content active">
+                <div class="settings-section">
+                    <h3>Your Profile</h3>
+                    <div class="profile-info">
+                        <div class="form-group">
+                            <label class="form-label">First Name</label>
+                            <input type="text" id="settings-firstname" class="form-input" placeholder="First name">
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Last Name</label>
+                            <input type="text" id="settings-lastname" class="form-input" placeholder="Last name">
+                        </div>
+                        <button class="auth-btn" onclick="updateProfileName()" style="margin-top: 0.5rem;">Update
+                            Name</button>
+                    </div>
+                </div>
+
+                <div class="settings-section">
+                    <h3>Change Password</h3>
+                    <div class="form-group">
+                        <label class="form-label">Current Password</label>
+                        <input type="password" id="settings-old-password" class="form-input"
+                            placeholder="Current password">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">New Password</label>
+                        <input type="password" id="settings-new-password" class="form-input"
+                            placeholder="8-12 characters">
+                    </div>
+                    <button class="auth-btn" onclick="changePassword()">Change Password</button>
+                </div>
+
+                <div id="settings-message"
+                    style="color: #22c55e; text-align: center; margin-top: 1rem; min-height: 1.2rem;"></div>
+            </div>
+
+            <!-- Advanced API Tab -->
+            <div id="settings-api" class="settings-content">
+                <div id="api-forbidden" class="settings-section" style="text-align: center; padding: 2rem;">
+                    <div style="font-size: 2rem; margin-bottom: 1rem;">🔒</div>
+                    <p style="color: #ef4444;">You are forbidden from accessing this setting.</p>
+                    <p style="color: var(--text-secondary); font-size: 0.85rem; margin-top: 0.5rem;">
+                        This section is for advanced API users only.
+                    </p>
+                </div>
+                <div id="api-access" class="settings-section" style="display: none;">
+                    <h3>API Developer Access</h3>
+                    <p style="color: var(--text-secondary); margin-bottom: 1rem;">
+                        You have developer access to the API.
+                    </p>
+                    <div class="form-group">
+                        <label class="form-label">Your API Key</label>
+                        <input type="text" id="settings-api-key" class="form-input" readonly
+                            style="font-family: monospace;">
+                    </div>
+                    <button class="auth-btn auth-btn-secondary" onclick="copyApiKey()">Copy API Key</button>
+                </div>
+            </div>
+
+            <!-- Sign Out -->
+            <div class="settings-footer">
+                <button class="signout-btn" onclick="signOut()">
+                    <span>🚪</span> Sign Out
+                </button>
             </div>
         </div>
     </div>
@@ -2388,16 +2592,207 @@
             }
         }
 
-        function openSettings() {
-            // Show new Auth Modal
-            document.getElementById('auth-modal').classList.add('active');
-            switchAuthTab('special'); // Default to API key tab for settings
+        // --- Settings Functions ---
+        let currentUserProfile = null;
 
-            // Pre-fill existing key if available
-            const savedKey = localStorage.getItem('ai_key');
-            if (savedKey) {
-                document.getElementById('auth-api-key').value = savedKey;
+        async function openSettings() {
+            const settingsModal = document.getElementById('settings-modal');
+            settingsModal.style.display = 'flex';
+
+            // Load user profile
+            await loadUserProfile();
+
+            // Reset to profile tab
+            switchSettingsTab('profile');
+        }
+
+        function closeSettings() {
+            document.getElementById('settings-modal').style.display = 'none';
+            document.getElementById('settings-message').textContent = '';
+        }
+
+        function switchSettingsTab(tab) {
+            // Update tabs
+            document.querySelectorAll('.settings-tab').forEach(t => t.classList.remove('active'));
+            const targetTab = document.querySelector(`.settings-tab[onclick*="${tab}"]`);
+            if (targetTab) targetTab.classList.add('active');
+
+            // Update content
+            document.querySelectorAll('.settings-content').forEach(c => c.classList.remove('active'));
+            document.getElementById('settings-' + tab).classList.add('active');
+
+            // Check API access for API tab
+            if (tab === 'api') {
+                const isApiUser = currentUserProfile?.is_api_user || false;
+                document.getElementById('api-forbidden').style.display = isApiUser ? 'none' : 'block';
+                document.getElementById('api-access').style.display = isApiUser ? 'block' : 'none';
+
+                if (isApiUser) {
+                    document.getElementById('settings-api-key').value = apiKey || '';
+                }
             }
+        }
+
+        async function loadUserProfile() {
+            const sessionToken = localStorage.getItem('orin_session_token');
+            if (!sessionToken) {
+                // Use locally stored names if no session
+                document.getElementById('settings-firstname').value = localStorage.getItem('orin_user_firstname') || '';
+                document.getElementById('settings-lastname').value = localStorage.getItem('orin_user_lastname') || '';
+                currentUserProfile = { is_api_user: false };
+                return;
+            }
+
+            try {
+                const res = await fetch(`${BASE_URL}/api/user/profile`, {
+                    headers: { 'Authorization': `Bearer ${sessionToken}` }
+                });
+
+                if (res.ok) {
+                    const data = await res.json();
+                    currentUserProfile = data.user;
+                    document.getElementById('settings-firstname').value = data.user.first_name || '';
+                    document.getElementById('settings-lastname').value = data.user.last_name || '';
+                } else {
+                    currentUserProfile = { is_api_user: false };
+                }
+            } catch (e) {
+                console.error('Failed to load profile:', e);
+                currentUserProfile = { is_api_user: false };
+            }
+        }
+
+        async function updateProfileName() {
+            const firstName = document.getElementById('settings-firstname').value.trim();
+            const lastName = document.getElementById('settings-lastname').value.trim();
+
+            if (!firstName) {
+                showSettingsMessage('Please enter your first name', true);
+                return;
+            }
+
+            const sessionToken = localStorage.getItem('orin_session_token');
+            if (!sessionToken) {
+                // Just save locally
+                localStorage.setItem('orin_user_firstname', firstName);
+                if (lastName) localStorage.setItem('orin_user_lastname', lastName);
+                showSettingsMessage('Name saved locally');
+                return;
+            }
+
+            try {
+                const res = await fetch(`${BASE_URL}/api/user/profile/name`, {
+                    method: 'PUT',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${sessionToken}`
+                    },
+                    body: JSON.stringify({ first_name: firstName, last_name: lastName })
+                });
+
+                const data = await res.json();
+                if (res.ok) {
+                    localStorage.setItem('orin_user_firstname', firstName);
+                    if (lastName) localStorage.setItem('orin_user_lastname', lastName);
+                    showSettingsMessage('Name updated successfully');
+                } else {
+                    showSettingsMessage(data.detail || 'Failed to update name', true);
+                }
+            } catch (e) {
+                showSettingsMessage('Network error', true);
+            }
+        }
+
+        async function changePassword() {
+            const oldPassword = document.getElementById('settings-old-password').value;
+            const newPassword = document.getElementById('settings-new-password').value;
+
+            if (!oldPassword || !newPassword) {
+                showSettingsMessage('Please fill both password fields', true);
+                return;
+            }
+
+            if (newPassword.length < 8 || newPassword.length > 12) {
+                showSettingsMessage('New password must be 8-12 characters', true);
+                return;
+            }
+
+            const sessionToken = localStorage.getItem('orin_session_token');
+            if (!sessionToken) {
+                showSettingsMessage('Please sign in to change password', true);
+                return;
+            }
+
+            try {
+                const res = await fetch(`${BASE_URL}/api/user/profile/password`, {
+                    method: 'PUT',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${sessionToken}`
+                    },
+                    body: JSON.stringify({ old_password: oldPassword, new_password: newPassword })
+                });
+
+                const data = await res.json();
+                if (res.ok) {
+                    showSettingsMessage('Password changed successfully');
+                    document.getElementById('settings-old-password').value = '';
+                    document.getElementById('settings-new-password').value = '';
+                } else {
+                    showSettingsMessage(data.detail || 'Failed to change password', true);
+                }
+            } catch (e) {
+                showSettingsMessage('Network error', true);
+            }
+        }
+
+        async function signOut() {
+            const sessionToken = localStorage.getItem('orin_session_token');
+
+            // Try server-side invalidation
+            if (sessionToken) {
+                try {
+                    await fetch(`${BASE_URL}/api/auth/signout`, {
+                        method: 'POST',
+                        headers: { 'Authorization': `Bearer ${sessionToken}` }
+                    });
+                } catch (e) {
+                    console.log('Server signout failed, continuing with local cleanup');
+                }
+            }
+
+            // Clear all local storage
+            localStorage.removeItem('ai_key');
+            localStorage.removeItem('orin_session_token');
+            localStorage.removeItem('orin_user_firstname');
+            localStorage.removeItem('orin_user_lastname');
+            localStorage.removeItem('orin_remembered_user');
+            localStorage.removeItem('deviceFingerprint');
+
+            // Clear session storage
+            sessionStorage.clear();
+
+            // Reset state
+            apiKey = '';
+            currentUserProfile = null;
+
+            // Close settings and show auth
+            closeSettings();
+            document.getElementById('auth-modal').classList.add('active');
+            showAuthView('choice');
+        }
+
+        function copyApiKey() {
+            const apiKeyInput = document.getElementById('settings-api-key');
+            apiKeyInput.select();
+            document.execCommand('copy');
+            showSettingsMessage('API key copied to clipboard');
+        }
+
+        function showSettingsMessage(msg, isError = false) {
+            const el = document.getElementById('settings-message');
+            el.textContent = msg;
+            el.style.color = isError ? '#ef4444' : '#22c55e';
         }
 
         async function checkSystemStatus() {
