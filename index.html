@@ -1292,6 +1292,34 @@
             position: relative;
         }
 
+        /* Password Toggle */
+        .password-wrapper {
+            position: relative;
+            display: flex;
+            align-items: center;
+        }
+
+        .password-wrapper .form-input {
+            padding-right: 2.5rem;
+        }
+
+        .toggle-password {
+            position: absolute;
+            right: 0.75rem;
+            background: none;
+            border: none;
+            color: var(--text-secondary);
+            cursor: pointer;
+            font-size: 1.1rem;
+            padding: 0.25rem;
+            opacity: 0.7;
+            transition: opacity 0.2s;
+        }
+
+        .toggle-password:hover {
+            opacity: 1;
+        }
+
         /* Mobile Responsiveness */
         @media (max-width: 768px) {
             .settings-modal-content {
@@ -1687,7 +1715,11 @@
                     </div>
                     <div class="form-group">
                         <label class="form-label">Password</label>
-                        <input type="password" id="signin-password" class="form-input" placeholder="••••••••">
+                        <div class="password-wrapper">
+                            <input type="password" id="signin-password" class="form-input" placeholder="••••••••">
+                            <button type="button" class="toggle-password"
+                                onclick="togglePasswordVisibility('signin-password', this)">👁️</button>
+                        </div>
                     </div>
                     <div class="form-group" style="display: flex; align-items: center; gap: 0.5rem;">
                         <input type="checkbox" id="signin-remember" style="width: auto;">
@@ -1762,8 +1794,12 @@
                     </div>
                     <div class="form-group">
                         <label class="form-label">Password</label>
-                        <input type="password" id="reg-password" class="form-input" placeholder="8-12 characters"
-                            oninput="validatePasswordRealtime()">
+                        <div class="password-wrapper">
+                            <input type="password" id="reg-password" class="form-input" placeholder="8-12 characters"
+                                oninput="validatePasswordRealtime()">
+                            <button type="button" class="toggle-password"
+                                onclick="togglePasswordVisibility('reg-password', this)">👁️</button>
+                        </div>
                         <div id="password-requirements" style="margin-top: 0.5rem; font-size: 0.75rem;">
                             <div id="req-length" class="req-item">• 8-12 characters</div>
                             <div id="req-uppercase" class="req-item">• Uppercase letter</div>
@@ -1823,13 +1859,21 @@
                     <h3>Change Password</h3>
                     <div class="form-group">
                         <label class="form-label">Current Password</label>
-                        <input type="password" id="settings-old-password" class="form-input"
-                            placeholder="Current password">
+                        <div class="password-wrapper">
+                            <input type="password" id="settings-old-password" class="form-input"
+                                placeholder="Current password">
+                            <button type="button" class="toggle-password"
+                                onclick="togglePasswordVisibility('settings-old-password', this)">👁️</button>
+                        </div>
                     </div>
                     <div class="form-group">
                         <label class="form-label">New Password</label>
-                        <input type="password" id="settings-new-password" class="form-input"
-                            placeholder="8-12 characters">
+                        <div class="password-wrapper">
+                            <input type="password" id="settings-new-password" class="form-input"
+                                placeholder="8-12 characters">
+                            <button type="button" class="toggle-password"
+                                onclick="togglePasswordVisibility('settings-new-password', this)">👁️</button>
+                        </div>
                     </div>
                     <button class="auth-btn" onclick="changePassword()">Change Password</button>
                 </div>
@@ -1885,7 +1929,7 @@
                     <h2>Publisher’s Note</h2>
                 </div>
 
-                <div class="publisher-note-text">
+                <div class="publisher-note-text" id="publisher-note-text">
                     <p>This project is an early-stage demonstration, currently under development and progressing at
                         a
                         gradual pace due to limited resources.</p>
@@ -2036,6 +2080,17 @@
         function backToOtpStep() {
             document.getElementById('signup-step-create').style.display = 'none';
             document.getElementById('signup-step-otp').style.display = 'block';
+        }
+
+        function togglePasswordVisibility(inputId, btn) {
+            const input = document.getElementById(inputId);
+            if (input.type === 'password') {
+                input.type = 'text';
+                btn.textContent = '🙈';
+            } else {
+                input.type = 'password';
+                btn.textContent = '👁️';
+            }
         }
 
         function validatePasswordRealtime() {
@@ -2322,7 +2377,7 @@
 
         function completeLogin(key, token) {
             localStorage.setItem('ai_key', key);
-            if (token) localStorage.setItem('session_token', token);
+            if (token) localStorage.setItem('orin_session_token', token);
 
             document.getElementById('auth-modal').classList.remove('active');
             apiKey = key;
@@ -2657,8 +2712,36 @@
             }
         }
 
+        async function fetchPublisherNote() {
+            try {
+                const res = await fetch(`${BASE_URL}/v1/publisher-note`);
+                if (res.ok) {
+                    const data = await res.json();
+                    if (data.note && data.note.trim()) {
+                        // Replace note content with custom content from backend
+                        const noteEl = document.getElementById('publisher-note-text');
+                        if (noteEl) {
+                            // Parse the note - if it contains HTML, use it; otherwise wrap in paragraphs
+                            if (data.note.includes('<')) {
+                                noteEl.innerHTML = data.note;
+                            } else {
+                                // Convert plain text with newlines to paragraphs
+                                const paragraphs = data.note.split('\n\n').map(p => `<p>${p}</p>`).join('');
+                                noteEl.innerHTML = paragraphs;
+                            }
+                        }
+                    }
+                }
+            } catch (e) {
+                console.log('Using default publisher note');
+            }
+        }
+
         function initPublisherNote() {
             const seenNote = localStorage.getItem('publisher_note_seen');
+
+            // Fetch dynamic note content
+            fetchPublisherNote();
 
             if (!seenNote) {
                 showPublisherNote(false);
@@ -2689,10 +2772,12 @@
                 loadRememberedUser(); // Load saved username if any
                 // Hide old modal just in case
                 modal.style.display = 'none';
-            } else if (apiKey) {
-                // Verify device if API key exists
+            } else if (apiKey && !sessionToken) {
+                // Only verify device for API-only users (no email/password login)
+                // Email/password users have a session token and don't need device binding
                 await verifyDevice(apiKey);
             }
+            // If sessionToken exists, user is logged in via email/password - no device check needed
         }
 
         // --- Settings Functions ---
