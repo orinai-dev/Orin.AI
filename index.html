@@ -1257,6 +1257,41 @@
             color: #ef4444;
         }
 
+        .auth-back-icon {
+            position: absolute;
+            top: 1rem;
+            right: 1rem;
+            background: rgba(255, 255, 255, 0.1);
+            border: none;
+            color: #a1a1aa;
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            cursor: pointer;
+            font-size: 1rem;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .auth-back-icon:hover {
+            background: rgba(255, 255, 255, 0.2);
+            color: white;
+        }
+
+        .signin-form {
+            display: none;
+        }
+
+        .signin-form.active {
+            display: block;
+        }
+
+        .auth-card {
+            position: relative;
+        }
+
         .form-group {
             margin-bottom: 1.5rem;
         }
@@ -1441,9 +1476,12 @@
     <!-- Auth Modal -->
     <div id="auth-modal" class="auth-modal active">
         <div class="auth-card">
+            <!-- Back Button (top-right) -->
+            <button id="auth-back-btn" class="auth-back-icon" onclick="goAuthBack()" style="display: none;">✕</button>
+
             <div style="text-align: center; margin-bottom: 2rem;">
                 <div
-                    style="font-size: 2rem; font-weight: 700; background: linear-gradient(135deg, #667eea 0%, #764ba2 25%, #f093fb 50%, #4facfe 75%, #00f2fe 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent; margin-bottom: 0.5rem;">
+                    style="font-size: 2rem; font-weight: 700; background: linear-gradient(135deg, #667eea 0%, #764ba2 25%, #f093fb 50%, #4facfe 75%, #00f2fe 100%); -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent; margin-bottom: 0.5rem;">
                     Orin.AI
                 </div>
                 <div id="auth-subtitle" style="color: var(--text-secondary);">Welcome</div>
@@ -1457,35 +1495,48 @@
 
             <!-- Sign In View -->
             <div id="auth-signin" class="auth-view">
-                <div class="form-group">
-                    <label class="form-label">Username or Email</label>
-                    <input type="text" id="signin-username" class="form-input" placeholder="username or email">
+                <!-- Sign In Tabs -->
+                <div class="auth-tabs">
+                    <button class="auth-tab active" onclick="switchSigninTab('password')">Password</button>
+                    <button class="auth-tab" onclick="switchSigninTab('apikey')">API Key</button>
                 </div>
-                <div class="form-group">
-                    <label class="form-label">Password</label>
-                    <input type="password" id="signin-password" class="form-input" placeholder="••••••••">
+
+                <!-- Password Login -->
+                <div id="signin-password-form" class="signin-form active">
+                    <div class="form-group">
+                        <label class="form-label">Username or Email</label>
+                        <input type="text" id="signin-username" class="form-input" placeholder="username or email">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Password</label>
+                        <input type="password" id="signin-password" class="form-input" placeholder="••••••••">
+                    </div>
+                    <div class="form-group" style="display: flex; align-items: center; gap: 0.5rem;">
+                        <input type="checkbox" id="signin-remember" style="width: auto;">
+                        <label for="signin-remember"
+                            style="color: var(--text-secondary); font-size: 0.85rem; cursor: pointer;">Remember
+                            me</label>
+                    </div>
+                    <button class="auth-btn" onclick="loginPassword()">Sign In</button>
                 </div>
-                <button class="auth-btn" onclick="loginPassword()">Sign In</button>
+
+                <!-- API Key Login -->
+                <div id="signin-apikey-form" class="signin-form">
+                    <p style="color: #a1a1aa; margin-bottom: 1rem; font-size: 0.85rem;">
+                        For advanced users with an administrator-provided API key.
+                    </p>
+                    <div class="form-group">
+                        <label class="form-label">API Key</label>
+                        <input type="text" id="auth-api-key" class="form-input" placeholder="ORIN-XXXX-XXXX"
+                            style="font-family: monospace;">
+                    </div>
+                    <button class="auth-btn" onclick="loginAPI()">Connect</button>
+                </div>
 
                 <div style="text-align: center; margin-top: 1.5rem; color: var(--text-secondary); font-size: 0.9rem;">
                     Don't have an account? <a href="#" onclick="showAuthView('signup'); return false;"
                         style="color: var(--primary);">Sign Up</a>
                 </div>
-
-                <!-- Advanced: API Key -->
-                <details style="margin-top: 1.5rem;">
-                    <summary style="color: var(--text-secondary); cursor: pointer; font-size: 0.85rem;">Advanced: API
-                        Key</summary>
-                    <div style="margin-top: 1rem;">
-                        <div class="form-group">
-                            <input type="text" id="auth-api-key" class="form-input" placeholder="ORIN-XXXX-XXXX"
-                                style="font-family: monospace;">
-                        </div>
-                        <button class="auth-btn" onclick="loginAPI()">Connect with API Key</button>
-                    </div>
-                </details>
-
-                <button onclick="showAuthView('choice')" class="back-btn">← Back</button>
             </div>
 
             <!-- Sign Up View -->
@@ -1497,7 +1548,6 @@
                         <input type="email" id="auth-email-input" class="form-input" placeholder="you@example.com">
                     </div>
                     <button class="auth-btn" onclick="sendOTP()">Send Verification Code</button>
-                    <button onclick="showAuthView('choice')" class="back-btn">← Back</button>
                 </div>
 
                 <!-- Step 2: OTP -->
@@ -1511,14 +1561,18 @@
                             style="letter-spacing: 0.5rem; text-align: center; font-size: 1.5rem;">
                     </div>
                     <button class="auth-btn" onclick="verifyOTP()">Verify Code</button>
-                    <button onclick="backToEmailStep()" class="back-btn">← Back</button>
                 </div>
 
                 <!-- Step 3: Create Account -->
                 <div id="signup-step-create" style="display: none;">
                     <p style="color: #a1a1aa; margin-bottom: 1rem; font-size: 0.9rem;">
-                        Create your account credentials.
+                        Create your account.
                     </p>
+                    <div class="form-group">
+                        <label class="form-label">Display Name</label>
+                        <input type="text" id="reg-displayname" class="form-input"
+                            placeholder="Your name (for conversations)">
+                    </div>
                     <div class="form-group">
                         <label class="form-label">Username</label>
                         <input type="text" id="reg-username" class="form-input" placeholder="Choose a username">
@@ -1536,7 +1590,6 @@
                         </div>
                     </div>
                     <button class="auth-btn" onclick="registerUser()">Create Account</button>
-                    <button onclick="backToOtpStep()" class="back-btn">← Back</button>
                 </div>
 
                 <div style="text-align: center; margin-top: 1.5rem; color: var(--text-secondary); font-size: 0.9rem;">
@@ -1624,7 +1677,11 @@
             showAuthView(tab === 'email' ? 'signup' : 'signin');
         }
 
-        function showAuthView(view) {
+        // Navigation stack for back button
+        let authNavStack = ['choice'];
+        let currentSignupStep = 'email'; // email, otp, create
+
+        function showAuthView(view, addToStack = true) {
             // Hide all views
             document.querySelectorAll('.auth-view').forEach(v => v.classList.remove('active'));
 
@@ -1643,7 +1700,52 @@
                 document.getElementById('signup-step-email').style.display = 'block';
                 document.getElementById('signup-step-otp').style.display = 'none';
                 document.getElementById('signup-step-create').style.display = 'none';
+                currentSignupStep = 'email';
             }
+
+            // Show/hide back button
+            const backBtn = document.getElementById('auth-back-btn');
+            backBtn.style.display = (view === 'choice') ? 'none' : 'flex';
+
+            // Add to navigation stack
+            if (addToStack && authNavStack[authNavStack.length - 1] !== view) {
+                authNavStack.push(view);
+            }
+
+            // Clear error
+            document.getElementById('auth-error').textContent = '';
+        }
+
+        function goAuthBack() {
+            // Pop current view
+            authNavStack.pop();
+
+            // Handle signup steps first
+            if (authNavStack[authNavStack.length - 1] === 'signup') {
+                if (currentSignupStep === 'create') {
+                    backToOtpStep();
+                    currentSignupStep = 'otp';
+                    return;
+                } else if (currentSignupStep === 'otp') {
+                    backToEmailStep();
+                    currentSignupStep = 'email';
+                    return;
+                }
+            }
+
+            // Navigate to previous view
+            const prevView = authNavStack.length > 0 ? authNavStack[authNavStack.length - 1] : 'choice';
+            showAuthView(prevView, false);
+        }
+
+        function switchSigninTab(tab) {
+            // Update tab buttons
+            document.querySelectorAll('#auth-signin .auth-tab').forEach(t => t.classList.remove('active'));
+            event.target.classList.add('active');
+
+            // Update forms
+            document.querySelectorAll('.signin-form').forEach(f => f.classList.remove('active'));
+            document.getElementById('signin-' + tab + '-form').classList.add('active');
 
             // Clear error
             document.getElementById('auth-error').textContent = '';
@@ -1719,6 +1821,7 @@
                     document.getElementById('signup-step-email').style.display = 'none';
                     document.getElementById('signup-step-otp').style.display = 'block';
                     document.getElementById('auth-otp-input').focus();
+                    currentSignupStep = 'otp';
                 } else {
                     showAuthError(data.detail || 'Failed to send code');
                 }
@@ -1759,6 +1862,7 @@
 
                         document.getElementById('signup-step-otp').style.display = 'none';
                         document.getElementById('signup-step-create').style.display = 'block';
+                        currentSignupStep = 'create';
                         showAuthError(''); // Clear any errors
                     }
                 } else {
@@ -1785,6 +1889,7 @@
         }
 
         async function registerUser() {
+            const displayName = document.getElementById('reg-displayname').value.trim();
             const username = document.getElementById('reg-username').value.trim();
             const password = document.getElementById('reg-password').value.trim();
 
@@ -1806,6 +1911,7 @@
                         email: currentAuthEmail,
                         username: username,
                         password: password,
+                        display_name: displayName || username,
                         verification_token: currentVerificationToken
                     })
                 });
@@ -1813,6 +1919,8 @@
                 const data = await res.json();
 
                 if (res.ok) {
+                    // Store display name for conversations
+                    if (displayName) localStorage.setItem('orin_display_name', displayName);
                     completeLogin(data.api_key, data.session_token);
                 } else {
                     showAuthError(data.detail || 'Registration failed');
@@ -1829,6 +1937,7 @@
         async function loginPassword() {
             const username = document.getElementById('signin-username').value.trim();
             const password = document.getElementById('signin-password').value.trim();
+            const rememberMe = document.getElementById('signin-remember').checked;
 
             if (!username || !password) return showAuthError('Enter username/email and password');
 
@@ -1846,6 +1955,12 @@
                 const data = await res.json();
 
                 if (res.ok) {
+                    // Save credentials if remember me is checked
+                    if (rememberMe) {
+                        localStorage.setItem('orin_remembered_user', username);
+                    } else {
+                        localStorage.removeItem('orin_remembered_user');
+                    }
                     completeLogin(data.api_key, data.session_token);
                 } else {
                     showAuthError(data.detail || 'Login failed');
@@ -1855,6 +1970,17 @@
             } finally {
                 btn.disabled = false;
                 btn.textContent = 'Sign In';
+            }
+        }
+
+        // Load remembered username on page load
+        function loadRememberedUser() {
+            const remembered = localStorage.getItem('orin_remembered_user');
+            if (remembered) {
+                const usernameInput = document.getElementById('signin-username');
+                if (usernameInput) usernameInput.value = remembered;
+                const rememberCheckbox = document.getElementById('signin-remember');
+                if (rememberCheckbox) rememberCheckbox.checked = true;
             }
         }
 
@@ -2217,6 +2343,7 @@
             if (!apiKey) {
                 // Show new Auth Modal instead of old simple modal
                 document.getElementById('auth-modal').classList.add('active');
+                loadRememberedUser(); // Load saved username if any
                 // Hide old modal just in case
                 modal.style.display = 'none';
             } else {
