@@ -1797,7 +1797,21 @@
 
         function showAuthError(msg) {
             const el = document.getElementById('auth-error');
-            el.textContent = msg;
+            // Handle different error formats from FastAPI
+            let errorText = msg;
+            if (typeof msg === 'object') {
+                if (Array.isArray(msg)) {
+                    // FastAPI validation errors are arrays of objects
+                    errorText = msg.map(e => e.msg || e.message || JSON.stringify(e)).join(', ');
+                } else if (msg.msg) {
+                    errorText = msg.msg;
+                } else if (msg.message) {
+                    errorText = msg.message;
+                } else {
+                    errorText = JSON.stringify(msg);
+                }
+            }
+            el.textContent = errorText;
             el.style.animation = 'none';
             el.offsetHeight; /* trigger reflow */
             el.style.animation = 'shake 0.4s ease-in-out';
@@ -1901,6 +1915,7 @@
 
             if (!firstName) return showAuthError('Please enter your first name');
             if (!username || !password) return showAuthError('Please fill all fields');
+            if (!currentVerificationToken) return showAuthError('Session expired. Please restart sign up.');
 
             // Validate password
             const passwordError = validatePassword(password);
