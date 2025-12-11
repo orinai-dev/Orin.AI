@@ -2778,6 +2778,7 @@
                 await verifyDevice(apiKey);
             }
             // If sessionToken exists, user is logged in via email/password - no device check needed
+            // AND we should not force them to have an apiKey variable set in JS memory if they have a session
         }
 
         // --- Settings Functions ---
@@ -2954,7 +2955,8 @@
             localStorage.removeItem('orin_session_token');
             localStorage.removeItem('orin_user_firstname');
             localStorage.removeItem('orin_user_lastname');
-            localStorage.removeItem('orin_remembered_user');
+            // Do NOT remove remembered user
+            // localStorage.removeItem('orin_remembered_user'); 
             localStorage.removeItem('deviceFingerprint');
 
             // Clear session storage
@@ -3397,16 +3399,19 @@ ${cleanAiResponse}
 
                 if (apiKey) {
                     headers['X-API-Key'] = apiKey;
-                } else {
-                    const sessionToken = localStorage.getItem('orin_session_token');
-                    if (sessionToken) {
-                        headers['Authorization'] = `Bearer ${sessionToken}`;
-                    } else {
-                        // No auth - trigger login
-                        localStorage.removeItem('ai_key');
-                        location.reload();
-                        throw new Error('No credentials');
-                    }
+                }
+
+                // ALWAYS send session token if available (for email users)
+                const sessionToken = localStorage.getItem('orin_session_token');
+                if (sessionToken) {
+                    headers['Authorization'] = `Bearer ${sessionToken}`;
+                }
+
+                // If neither exists, trigger login
+                if (!apiKey && !sessionToken) {
+                    localStorage.removeItem('ai_key');
+                    location.reload();
+                    throw new Error('No credentials');
                 }
 
                 const response = await fetch(`${BASE_URL}${endpoint}`, {
